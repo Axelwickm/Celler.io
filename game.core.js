@@ -77,8 +77,8 @@ var game_core = function(game_instance){
 
 	// Add some test cells to the gamestate
 	
-	this.gamestate.cells.push(new Cell(50,60));
-	this.gamestate.cells.push(new Cell(105,10));
+	this.gamestate.cells.push(new Cell(50, 60, 12));
+	this.gamestate.cells.push(new Cell(105, 10, 16));
 	
 	//Set up some physics integration values
 	this._pdt = 0.0001;                 //The physics update delta time
@@ -112,10 +112,6 @@ var game_core = function(game_instance){
 
 		//We start pinging the server to determine latency
 		this.client_create_ping_timer();
-
-		//Set their colors from the storage or locally
-		this.color = localStorage.getItem('color') || '#cc8822' ;
-		localStorage.setItem('color', this.color);
 		
 		this.client_create_debug_gui();
 
@@ -143,7 +139,8 @@ var Player = function(client){
 
 /* Gameplay classes */
 
-var Cell = function(_x, _y){
+var Cell = function(_x, _y, _r){
+	var radius = _r;
 	this.pos = {
 		x : _x,
 		y : _y
@@ -157,9 +154,10 @@ var Cell = function(_x, _y){
 }
 
 Cell.prototype.draw = function(){
-	// Circles are recource intensive to draw, so an image of a circle should be rendered.
 	game.ctx.fillStyle = this.color;
-    game.ctx.fillRect(this.pos.x, this.pos.y, 16, 16);
+    game.ctx.beginPath();
+	game.ctx.arc( this.pos.x, this.pos.y, 16, 0, Math.PI * 2 );
+	game.ctx.fill();
 }
 
 
