@@ -130,6 +130,7 @@ var game_core = function(game_instance){
 /* The Player class */
 var Player = function(client){
 	this.instance = client;
+	this.userid = client.userid;
 }
 
 
@@ -235,7 +236,7 @@ game_core.prototype.server_update = function(){
 
         //Make a snapshot of the current state, for updating the clients
     this.laststate = {
-        t   : this.server_time                      // our current local time on the server
+        t : this.server_time                      // our current local time on the server
     };
 
 	for (var i = 0; i<this.players.length; i++){
@@ -244,10 +245,25 @@ game_core.prototype.server_update = function(){
 
 }; //game_core.server_update
 
-game_core.prototype.newPlayer = function(client){
+game_core.prototype.server_new_player = function(client){
 	var player = new Player(client);
 	this.players.push(player);
-}; //game_core.server_update
+	
+	console.log('Player connected - ID: '+player.userid);
+}; //game_core.server_new_player
+
+game_core.prototype.server_player_leave = function(client){
+	var index = null;
+	for (var i = 0; i < this.players.length; i++){
+		if (this.players[i].userid == client.userid){
+			index = i;
+			break;
+		}
+	}
+	console.log('Player left - ID: '+this.players[index].userid);
+	this.players.splice(index, 1);
+	
+}; //game_core.server_player_leave
 
 
 game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {

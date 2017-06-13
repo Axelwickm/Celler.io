@@ -121,7 +121,12 @@
     }; //game_server.endGame
 
 	game_server.newPlayer = function(client) {
-		this.game.gamecore.newPlayer(client);
+		this.game.gamecore.server_new_player(client);
 		this.game.player_count++;
-	}
+	} //game_server.newPlayer
+	
+	game_server.playerLeave = function(client){
+		this.game.gamecore.server_player_leave(client);
+		this.game.player_count--;
+	} //game_server.playerLeave
 
