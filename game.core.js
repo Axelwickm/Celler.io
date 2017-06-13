@@ -62,56 +62,58 @@ var game_core = function(game_instance){
 	this.server = this.instance !== undefined;
 	console.log('Is server: '+this.server);
 
-		//Used in collision etc.
+	//Used in collision etc.
 	this.world = {
 		width : 720,
 		height : 480
 	};
-
-		//We create a player set, passing them
-		//the game that is running them, as well
 		
 	this.players = [];
 	this.self_player;
+	
+	this.gamestate = {
+		cells : []
+	}
 
-		//The speed at which the clients move.
-	this.playerspeed = 120;
-
-		//Set up some physics integration values
+	// Add some test cells to the gamestate
+	
+	this.gamestate.cells.push(new Cell(50,60));
+	this.gamestate.cells.push(new Cell(105,10));
+	
+	//Set up some physics integration values
 	this._pdt = 0.0001;                 //The physics update delta time
 	this._pdte = new Date().getTime();  //The physics update last delta time
-		//A local timer for precision on server and client
+	//A local timer for precision on server and client
 	this.local_time = 0.016;            //The local timer
 	this._dt = new Date().getTime();    //The local timer delta
 	this._dte = new Date().getTime();   //The local timer last frame time
 
-		//Start a physics loop, this is separate to the rendering
-		//as this happens at a fixed frequency
+	//Start a physics loop, this is separate to the rendering
+	//as this happens at a fixed frequency
 	this.create_physics_simulation();
 
-		//Start a fast paced timer for measuring time easier
+	//Start a fast paced timer for measuring time easier
 	this.create_timer();
 
-		//Client specific initialisation
+	//Client specific initialisation
 	if(!this.server) {
 		
-			//Create a keyboard handler
+		//Create a keyboard handler
 		this.keyboard = new THREEx.KeyboardState();
 
-			//Create the default configuration settings
+		//Create the default configuration settings
 		this.client_create_configuration();
-
-			//A list of recent server updates we interpolate across
-			//This is the buffer that is the driving factor for our networking
+		//A list of recent server updates we interpolate across
+		//This is the buffer that is the driving factor for our networking
 		this.server_updates = [];
 
-			//Connect to the socket.io server!
+		//Connect to the socket.io server!
 		this.client_connect_to_server();
 
-			//We start pinging the server to determine latency
+		//We start pinging the server to determine latency
 		this.client_create_ping_timer();
 
-			//Set their colors from the storage or locally
+		//Set their colors from the storage or locally
 		this.color = localStorage.getItem('color') || '#cc8822' ;
 		localStorage.setItem('color', this.color);
 		
@@ -125,6 +127,12 @@ var game_core = function(game_instance){
 	}
 
 }; //game_core.constructor
+
+//server side we set the 'game_core' class to a global type, so that it can use it anywhere.
+if( 'undefined' != typeof global ) {
+    module.exports = global.game_core = game_core;
+}
+
 	
 	
 /* The Player class */
@@ -133,11 +141,27 @@ var Player = function(client){
 	this.userid = client.userid;
 }
 
+/* Gameplay classes */
 
-//server side we set the 'game_core' class to a global type, so that it can use it anywhere.
-if( 'undefined' != typeof global ) {
-    module.exports = global.game_core = game_core;
+var Cell = function(_x, _y){
+	this.pos = {
+		x : _x,
+		y : _y
+	}
+	this.vel = {
+		x : 0,
+		y : 0
+	}
+	
+	this.color = '#ff0000';
 }
+
+Cell.prototype.draw = function(){
+	// Circles are recource intensive to draw, so an image of a circle should be rendered.
+	game.ctx.fillStyle = this.color;
+    game.ctx.fillRect(this.pos.x, this.pos.y, 16, 16);
+}
+
 
 /*
     Helper functions for the game code
@@ -363,7 +387,10 @@ game_core.prototype.client_update_physics = function() {
 
 game_core.prototype.client_update = function() {
     //Clear the screen area
-    this.ctx.clearRect(0,0,720,480);
+    this.ctx.clearRect(0,0,this.world.width,this.world.height);
+	
+	for (var i = 0; i<this.gamestate.cells.length; i++)
+		this.gamestate.cells[i].draw();
 
 
     //Capture inputs from the player
