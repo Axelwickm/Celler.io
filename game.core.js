@@ -19,6 +19,7 @@
     // requestAnimationFrame polyfill by Erik Möller
     // fixes from Paul Irish and Tino Zijdel
 
+
 var frame_time = 60/1000; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 22hz
 
@@ -51,15 +52,20 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
         //both server and client. Server creates one for
         //each game that is hosted, and client creates one
         //for itself to play the game.
+		
 
 /* The game_core class */
 
+if('undefined' != typeof(global)) var p2 = require('p2');
 var game_core = function(game_instance){
-
+	//this.p2 = require('p2');
+	
 	//Store the instance, if any
 	this.instance = game_instance;
 	//If instance exists, this is server
 	this.server = this.instance !== undefined;
+	
+	
 	console.log('Is server: '+this.server);
 
 	//Used in collision etc.
@@ -74,11 +80,6 @@ var game_core = function(game_instance){
 	this.gamestate = {
 		cells : []
 	}
-
-	// Add some test cells to the gamestate
-	
-	this.gamestate.cells.push(new Cell(50, 60, 12));
-	this.gamestate.cells.push(new Cell(105, 10, 16));
 	
 	//Set up some physics integration values
 	this._pdt = 0.0001;                 //The physics update delta time
@@ -121,13 +122,16 @@ var game_core = function(game_instance){
 		this.laststate = {};
 
 	}
+	
+	// Add some test cells to the gamestate
+	
+	this.gamestate.cells.push(new Cell(this, 50, 60, 12));
+	this.gamestate.cells.push(new Cell(this, 105, 10, 16));
 
 }; //game_core.constructor
 
 //server side we set the 'game_core' class to a global type, so that it can use it anywhere.
-if( 'undefined' != typeof global ) {
-    module.exports = global.game_core = game_core;
-}
+if( 'undefined' != typeof global ) module.exports = global.game_core = game_core;
 
 	
 	
@@ -139,16 +143,18 @@ var Player = function(client){
 
 /* Gameplay classes */
 
-var Cell = function(_x, _y, _r){
-	var radius = _r;
-	this.pos = {
-		x : _x,
-		y : _y
-	}
-	this.vel = {
-		x : 0,
-		y : 0
-	}
+var Cell = function(gamecore, x, y, r){	
+	this.body = new p2.Body({
+		mass: 5,
+		position: [x, y],
+		velocity: [0, 15],
+		damping:0.03
+	});
+	this.radius = r;
+	var circleShape = new p2.Circle({ radius: r });
+	this.body.addShape(circleShape);
+	
+	gamecore.physics.addBody(this.body);
 	
 	this.color = '#ff0000';
 }
@@ -156,7 +162,7 @@ var Cell = function(_x, _y, _r){
 Cell.prototype.draw = function(){
 	game.ctx.fillStyle = this.color;
     game.ctx.beginPath();
-	game.ctx.arc( this.pos.x, this.pos.y, 16, 0, Math.PI * 2 );
+	game.ctx.arc( this.body.position[0], this.body.position[1], this.radius, 0, Math.PI * 2 );
 	game.ctx.fill();
 }
 
@@ -226,6 +232,7 @@ game_core.prototype.update = function(t) {
 
 
 game_core.prototype.update_physics = function() {
+	this.physics.step(frame_time);
 
     if(this.server) {
         this.server_update_physics();
@@ -405,14 +412,15 @@ game_core.prototype.create_timer = function(){
         this._dte = new Date().getTime();
         this.local_time += this._dt/1000.0;
     }.bind(this), 4);
-}
+} 
 
 game_core.prototype.create_physics_simulation = function() {
-
-    setInterval(function(){
+	this.physics = new p2.World({gravity:[0,0]});
+	
+	setInterval(function(){
         this._pdt = (new Date().getTime() - this._pdte)/1000.0;
         this._pdte = new Date().getTime();
-        this.update_physics();
+        this.update_physics();	
     }.bind(this), 15);
 
 }; //game_core.client_create_physics_simulation
