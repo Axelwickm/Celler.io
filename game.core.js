@@ -58,8 +58,7 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 
 if('undefined' != typeof(global)) var p2 = require('p2');
 var game_core = function(game_instance){
-	//this.p2 = require('p2');
-	
+
 	//Store the instance, if any
 	this.instance = game_instance;
 	//If instance exists, this is server
@@ -125,8 +124,8 @@ var game_core = function(game_instance){
 	
 	// Add some test cells to the gamestate
 	
-	this.gamestate.cells.push(new Cell(this, 50, 60, 12));
-	this.gamestate.cells.push(new Cell(this, 105, 10, 16));
+	this.gamestate.cells.push(new Cell(this, 600, 50, 12, 10, 30));
+	this.gamestate.cells.push(new Cell(this, 105, 100, 16, -10, 64));
 
 }; //game_core.constructor
 
@@ -143,12 +142,12 @@ var Player = function(client){
 
 /* Gameplay classes */
 
-var Cell = function(gamecore, x, y, r){	
+var Cell = function(gamecore, x, y, r, vx, vy){	
 	this.body = new p2.Body({
 		mass: 5,
 		position: [x, y],
-		velocity: [0, 15],
-		damping:0.03
+		velocity: [vx, vy],
+		damping:0.00
 	});
 	this.radius = r;
 	var circleShape = new p2.Circle({ radius: r });
