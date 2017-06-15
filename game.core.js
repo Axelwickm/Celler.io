@@ -334,7 +334,10 @@ game_core.prototype.client_handle_input = function(){
         //This takes input from the client and keeps a record,
         //It also sends the input information to the server immediately
         //as it is pressed. It also tags each input with a sequence number.
-
+	
+	if (game.dragging != -1)
+		game.dragging++;
+	
     var x_dir = 0;
     var y_dir = 0;
     var input = [];
@@ -468,11 +471,18 @@ game_core.prototype.create_camera = function() {
 	
 	this.mouseX = 0;
 	this.mouseY = 0;
+	this.oldMouse = {x:0, y:0}
+	this.dragging = -1;
 	
 	this.viewport.onmousemove = function(e){
 		e = e || window.event;
+		game.oldMouse.x = game.mouseX;
+		game.oldMouse.y = game.mouseY;
 		game.mouseX = e.offsetX;
 		game.mouseY = e.offsetY;
+		
+		if (game.dragging != -1)
+			game.camera.moveTo(game.camera.lookat[0]+game.oldMouse.x-game.mouseX,game.camera.lookat[1]+game.oldMouse.y-game.mouseY);
 	};
 	
 	this.viewport.onclick = function(e){
@@ -480,6 +490,28 @@ game_core.prototype.create_camera = function() {
 		var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
 		console.log('click! '+game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies).length);
 	};
+	
+	this.viewport.onmousedown = function(e){
+		e = e || window.event;
+		if (event.button == 0) {
+			game.dragging = 0;
+			game.viewport.style.cursor = 'none';
+		}
+	};
+	this.viewport.onmouseup = function(e){
+		e = e || window.event;
+		if (event.button == 0) {
+			game.dragging = -1;
+			game.viewport.style.cursor = "default";
+		}
+	};
+	
+	this.viewport.onmouseleave = function(e){
+		e = e || window.event;
+		game.dragging = -1;
+		game.viewport.style.cursor = "default";
+	};
+	
 	
 	scrollHandler = function(e){
 		var e = window.event || e;
