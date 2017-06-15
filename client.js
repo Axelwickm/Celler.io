@@ -28,6 +28,7 @@ window.onload = function(){
 
 			//Fetch the rendering contexts
 		game.ctx = game.viewport.getContext('2d');
+		game.create_camera();
 
 			//Set the draw style for the font
 		game.ctx.font = '11px "Helvetica"';

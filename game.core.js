@@ -113,6 +113,7 @@ var game_core = function(game_instance){
 		//We start pinging the server to determine latency
 		this.client_create_ping_timer();
 		
+		//Create debug gui
 		this.client_create_debug_gui();
 
 	} else { //if !server
@@ -394,8 +395,12 @@ game_core.prototype.client_update = function() {
     //Clear the screen area
     this.ctx.clearRect(0,0,this.world.width,this.world.height);
 	
+	this.camera.begin();
+	
 	for (var i = 0; i<this.gamestate.cells.length; i++)
 		this.gamestate.cells[i].draw();
+	
+	this.camera.end();
 
 
     //Capture inputs from the player
@@ -456,6 +461,11 @@ game_core.prototype.client_create_ping_timer = function() {
     }.bind(this), 1000);
     
 }; //game_core.client_create_ping_timer
+
+game_core.prototype.create_camera = function() {
+	this.camera = new Camera(this.ctx);
+	this.camera.zoomTo(0);
+}
 
 
 game_core.prototype.client_create_configuration = function() {
