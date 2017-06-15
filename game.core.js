@@ -470,6 +470,15 @@ game_core.prototype.create_camera = function() {
 		var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
 		console.log('click! '+game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies).length);
 	};
+	scrollHandler = function(event){
+		var e = window.event || e; // old IE support
+		var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+		game.camera.zoomTo(game.camera.distance+delta*64);
+		console.log('scroll! '+delta);
+	};
+	this.viewport.addEventListener("mousewheel", scrollHandler, false);    // IE9, Chrome, Safari, Opera
+	this.viewport.addEventListener("DOMMouseScroll", scrollHandler, false);// Firefox
+	this.viewport.addEventListener("onmousewheel", scrollHandler, false);  // IE 6/7/8
 }
 
 
