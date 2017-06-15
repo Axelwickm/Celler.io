@@ -124,8 +124,9 @@ var game_core = function(game_instance){
 	
 	// Add some test cells to the gamestate
 	
-	this.gamestate.cells.push(new Cell(this, 600, 50, 12, 10, 30));
-	this.gamestate.cells.push(new Cell(this, 105, 100, 16, -10, 64));
+	for (var i = 0; i<10; i++){
+		this.gamestate.cells.push(new Cell(this, this.world.width*Math.random(), this.world.height*Math.random(), 20*Math.random(), 8*Math.random(), 8*Math.random()));
+	}; 
 
 }; //game_core.constructor
 
