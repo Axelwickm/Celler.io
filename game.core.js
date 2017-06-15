@@ -396,7 +396,7 @@ game_core.prototype.client_update_physics = function() {
 
 game_core.prototype.client_update = function() {
     //Clear the screen area
-    this.ctx.clearRect(0,0,this.world.width,this.world.height);
+    this.ctx.clearRect(0,0,this.viewport.width,this.viewport.height);
 	
 	this.camera.begin();
 	
@@ -453,8 +453,8 @@ game_core.prototype.create_physics_simulation = function() {
 
 game_core.prototype.client_create_ping_timer = function() {
 
-        //Set a ping timer to 1 second, to maintain the ping/latency between
-        //client and server and calculated roughly how our connection is doing
+    //Set a ping timer to 1 second, to maintain the ping/latency between
+    //client and server and calculated roughly how our connection is doing
 
     setInterval(function(){
 
@@ -498,7 +498,7 @@ game_core.prototype.create_camera = function() {
 		e = e || window.event;
 		if (event.button == 0) {
 			game.dragging = 0;
-			game.viewport.style.cursor = 'none';
+			game.viewport.style.cursor = 'move';
 		}
 	};
 	this.viewport.onmouseup = function(e){
