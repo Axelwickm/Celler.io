@@ -419,6 +419,19 @@ game_core.prototype.create_physics_simulation = function() {
 	this.physics.defaultContactMaterial.stiffness = 1e6;
 	this.physics.defaultContactMaterial.restitution = 1;
 	
+	// World boundaries
+	this.physics.boundaries = new p2.Body({position:[this.world.width/2,this.world.height]});
+	this.physics.boundaries.addShape(new p2.Line({length:this.world.width}));
+	this.physics.addBody(this.physics.boundaries);
+	this.physics.boundaries = new p2.Body({position:[this.world.width/2,0]});
+	this.physics.boundaries.addShape(new p2.Line({length:this.world.width}));
+	this.physics.addBody(this.physics.boundaries);
+	this.physics.boundaries = new p2.Body({position:[0,this.world.height/2],angle:Math.PI/2});
+	this.physics.boundaries.addShape(new p2.Line({length:this.world.height}));
+	this.physics.addBody(this.physics.boundaries);
+	this.physics.boundaries = new p2.Body({position:[this.world.width,this.world.height/2],angle:Math.PI/2});
+	this.physics.boundaries.addShape(new p2.Line({length:this.world.height}));
+	this.physics.addBody(this.physics.boundaries);
 	
 	setInterval(function(){
         this._pdt = (new Date().getTime() - this._pdte)/1000.0;
