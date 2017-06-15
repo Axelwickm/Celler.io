@@ -21,13 +21,20 @@ window.onload = function(){
 
 			//Fetch the viewport
 		game.viewport = document.getElementById('viewport');
-			
+		window.onresize = function(){
 			//Adjust their size
+			game.viewport.width = window.innerWidth;
+			game.viewport.height = window.innerHeight;
+			game.camera.updateViewport();
+		}
 		game.viewport.width = window.innerWidth;;
 		game.viewport.height = window.innerHeight;
+			
+		
 
 			//Fetch the rendering contexts
 		game.ctx = game.viewport.getContext('2d');
+
 		game.create_camera();
 
 			//Set the draw style for the font
