@@ -481,8 +481,11 @@ game_core.prototype.create_camera = function() {
 		game.mouseX = e.offsetX;
 		game.mouseY = e.offsetY;
 		
-		if (game.dragging != -1)
-			game.camera.moveTo(game.camera.lookat[0]+game.oldMouse.x-game.mouseX,game.camera.lookat[1]+game.oldMouse.y-game.mouseY);
+		if (game.dragging != -1){
+			var oldScreen = game.camera.screenToWorld(game.mouseX, game.mouseY);
+			var newScreen = game.camera.screenToWorld(game.oldMouse.x, game.oldMouse.y);
+			game.camera.moveTo(game.camera.lookat[0]+newScreen.x-oldScreen.x, game.camera.lookat[1]+newScreen.y-oldScreen.y);
+		}
 	};
 	
 	this.viewport.onclick = function(e){
