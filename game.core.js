@@ -486,7 +486,7 @@ game_core.prototype.create_camera = function() {
 		var delta = -Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
 	
 		var oldPos = game.camera.screenToWorld(game.mouseX, game.mouseY);
-		game.camera.zoomTo(Math.max(game.camera.distance+delta*64, 25));
+		game.camera.zoomTo(Math.max(game.camera.distance+delta*100*Math.sqrt(game.camera.distance/1000), 25));
 		var newPos = game.camera.screenToWorld(game.mouseX, game.mouseY);
 		game.camera.moveTo(game.camera.lookat[0]+oldPos.x-newPos.x, game.camera.lookat[1]+oldPos.y-newPos.y);
 	};
