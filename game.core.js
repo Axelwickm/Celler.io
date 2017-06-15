@@ -120,14 +120,14 @@ var game_core = function(game_instance){
 
 		this.server_time = 0;
 		this.laststate = {};
+		
+		// Add some test cells to the gamestate
+	
+		for (var i = 0; i<10; i++){
+			this.gamestate.cells.push(new Cell(this, this.world.width*Math.random(), this.world.height*Math.random(), 20*Math.random(), 8*Math.random(), 8*Math.random()));
+		};
 
-	}
-	
-	// Add some test cells to the gamestate
-	
-	for (var i = 0; i<10; i++){
-		this.gamestate.cells.push(new Cell(this, this.world.width*Math.random(), this.world.height*Math.random(), 20*Math.random(), 8*Math.random(), 8*Math.random()));
-	}; 
+	} 
 
 }; //game_core.constructor
 
@@ -146,10 +146,10 @@ var Player = function(client){
 
 var Cell = function(gamecore, x, y, r, vx, vy){	
 	this.body = new p2.Body({
-		mass: 5,
+		mass: 10,
 		position: [x, y],
 		velocity: [vx, vy],
-		damping:0.00
+		damping:0.03
 	});
 	this.radius = r;
 	var circleShape = new p2.Circle({ radius: r });
@@ -278,6 +278,39 @@ game_core.prototype.server_update = function(){
 game_core.prototype.server_new_player = function(client){
 	var player = new Player(client);
 	this.players.push(player);
+	
+	var players = [];
+	for (var i = 0; i<this.players.length; i++){
+		n = {
+			uuid:this.players[i].instance.uuid
+		}
+		players.push(n);
+	}
+	
+	var gamestate = {
+		cells:[]
+	};
+	for (var i = 0; i<this.gamestate.cells.length; i++){
+		n = {
+			position:this.gamestate.cells[i].body.position,
+			velocity:this.gamestate.cells[i].body.velocity,
+			mass:this.gamestate.cells[i].body.mass,
+			damping:this.gamestate.cells[i].body.damping,
+			radius:this.gamestate.cells[i].radius,
+			color:this.color
+		}
+		gamestate.cells.push(n);
+	}
+	
+	var gamestate_to_client = {
+		t:this.server_time,
+		uuid:player.instance.uuid,
+		players:players,
+		playerIndex:this.players.length-1,
+		gamestate:gamestate
+	} 
+	
+	player.instance.emit('onserveralldata', gamestate_to_client);
 	
 	console.log('Player connected - ID: '+player.userid);
 }; //game_core.server_new_player
@@ -450,6 +483,20 @@ game_core.prototype.create_physics_simulation = function() {
 
 }; //game_core.client_create_physics_simulation
 
+game_core.prototype.client_onserveralldata = function(data){
+	var meIndex = data.playerIndex;
+
+	this.local_time = data.t+this.net_latency;
+	this.players = data.players;
+	this.me_uuid = data.uuid;
+	for (var i = 0; i<data.gamestate.cells.length; i++){
+		this.gamestate.cells.push(new Cell(this,
+			data.gamestate.cells[i].position[0], data.gamestate.cells[i].position[1],
+			data.gamestate.cells[i].radius,
+			data.gamestate.cells[i].velocity[0], data.gamestate.cells[i].velocity[1]));
+	}
+}
+
 
 game_core.prototype.client_create_ping_timer = function() {
 
@@ -578,28 +625,6 @@ game_core.prototype.client_create_debug_gui = function() {
 
 }; //game_core.client_create_debug_gui
 
-game_core.prototype.client_onreadygame = function(data) {
-
-    var server_time = parseFloat(data.replace('-','.'));
-    this.local_time = server_time + this.net_latency;
-    console.log('server time is about ' + this.local_time);
-
-        //Make sure colors are synced up
-    this.socket.send('c.' + this.players.self.color);
-
-}; //client_onreadygame
-
-game_core.prototype.client_onjoingame = function(data) {
-	var server_time = parseFloat(data.replace('-','.'));
-
-        //Get an estimate of the current time on the server
-    this.local_time = server_time + this.net_latency;
-}; //client_onjoingame
-
-
-game_core.prototype.client_onconnected = function(data) {
-	
-}; //client_onconnected
 
 game_core.prototype.client_onping = function(data) {
 
@@ -619,12 +644,6 @@ game_core.prototype.client_onnetmessage = function(data) {
         case 's': //server message
 
             switch(subcommand) {
-
-                case 'j' : //join a game requested
-                    this.client_onjoingame(commanddata); break;
-
-                case 'r' : //ready a game requested
-                    this.client_onreadygame(commanddata); break;
 
                 case 'e' : //end game requested
                     this.client_ondisconnect(commanddata); break;
@@ -657,8 +676,8 @@ game_core.prototype.client_connect_to_server = function() {
         this.socket.on('disconnect', this.client_ondisconnect.bind(this));
         //Sent each tick of the server simulation. This is our authoritive update
         this.socket.on('onserverupdate', this.client_onserverupdate_recieved.bind(this));
-        //Handle when we connect to the server, showing state and storing id's.
-        this.socket.on('onconnected', this.client_onconnected.bind(this));
+		//Sent initally to update the whole game state
+        this.socket.on('onserveralldata', this.client_onserveralldata.bind(this));
         //On error we just show that we are not connected for now. Can print the data.
         this.socket.on('error', this.client_ondisconnect.bind(this));
         //On message from the server, we parse the commands and send it to the handlers
