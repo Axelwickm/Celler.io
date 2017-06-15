@@ -464,7 +464,12 @@ game_core.prototype.client_create_ping_timer = function() {
 
 game_core.prototype.create_camera = function() {
 	this.camera = new Camera(this.ctx);
-	this.camera.zoomTo(0);
+	this.camera.zoomTo(2000);
+	
+	this.viewport.onclick = function(event){
+		var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
+		console.log('click! '+game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies).length);
+	};
 }
 
 
