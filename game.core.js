@@ -415,6 +415,10 @@ game_core.prototype.create_timer = function(){
 
 game_core.prototype.create_physics_simulation = function() {
 	this.physics = new p2.World({gravity:[0,0]});
+	this.physics.defaultContactMaterial.friction = 0;
+	this.physics.defaultContactMaterial.stiffness = 1e6;
+	this.physics.defaultContactMaterial.restitution = 1;
+	
 	
 	setInterval(function(){
         this._pdt = (new Date().getTime() - this._pdte)/1000.0;
