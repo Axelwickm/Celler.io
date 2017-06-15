@@ -8,5 +8,5 @@ npm install
 
 To run server:
 ```
-node app.js´
+node app.js
 ```
