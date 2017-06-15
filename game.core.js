@@ -466,15 +466,29 @@ game_core.prototype.create_camera = function() {
 	this.camera = new Camera(this.ctx);
 	this.camera.zoomTo(2000);
 	
-	this.viewport.onclick = function(event){
+	this.mouseX = 0;
+	this.mouseY = 0;
+	
+	this.viewport.onmousemove = function(e){
+		e = e || window.event;
+		game.mouseX = e.offsetX;
+		game.mouseY = e.offsetY;
+	};
+	
+	this.viewport.onclick = function(e){
+		e = e || window.event;
 		var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
 		console.log('click! '+game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies).length);
 	};
-	scrollHandler = function(event){
-		var e = window.event || e; // old IE support
-		var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
-		game.camera.zoomTo(game.camera.distance+delta*64);
-		console.log('scroll! '+delta);
+	
+	scrollHandler = function(e){
+		var e = window.event || e;
+		var delta = -Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+	
+		var oldPos = game.camera.screenToWorld(game.mouseX, game.mouseY);
+		game.camera.zoomTo(Math.max(game.camera.distance+delta*64, 25));
+		var newPos = game.camera.screenToWorld(game.mouseX, game.mouseY);
+		game.camera.moveTo(game.camera.lookat[0]+oldPos.x-newPos.x, game.camera.lookat[1]+oldPos.y-newPos.y);
 	};
 	this.viewport.addEventListener("mousewheel", scrollHandler, false);    // IE9, Chrome, Safari, Opera
 	this.viewport.addEventListener("DOMMouseScroll", scrollHandler, false);// Firefox
