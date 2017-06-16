@@ -361,6 +361,14 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
 
 */
 
+game_core.prototype.client_click_cell = function(cellID){
+	
+	if (this.gamestate.cells[cellID].color == '#ff0000')
+		this.gamestate.cells[cellID].color = '#00ff66';
+	else
+		this.gamestate.cells[cellID].color = '#ff0000';
+}
+
 game_core.prototype.client_handle_input = function(){
 
     //if(this.lit > this.local_time) return;
@@ -539,6 +547,16 @@ game_core.prototype.create_camera = function() {
 		e = e || window.event;
 		var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
 		console.log('click! '+game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies).length);
+		var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
+		
+		if (clicked_cell_bodies.length != 0){
+			for(var i = 0; i<game.gamestate.cells.length; i++)
+				if (game.gamestate.cells[i].body == clicked_cell_bodies[0]){
+					game.client_click_cell(i);
+					break;
+				}	
+		}
+			
 	};
 	
 	this.viewport.onmousedown = function(e){
