@@ -151,7 +151,7 @@ var Cell = function(gamecore, x, y, r, vx, vy){
 		mass: 10,
 		position: [x, y],
 		velocity: [vx, vy],
-		damping:0.03
+		damping:0.00
 	});
 	this.radius = r;
 	var circleShape = new p2.Circle({ radius: r });
