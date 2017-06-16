@@ -437,6 +437,7 @@ game_core.prototype.create_physics_simulation = function() {
 game_core.prototype.create_camera = function() {
 	this.camera = new Camera(this.ctx);
 	this.camera.zoomTo(2000);
+	this.camera.moveTo(this.world.width/2, this.world.height/2);
 	
 	this.viewport.onmousemove = function(e){
 		e = e || window.event;
