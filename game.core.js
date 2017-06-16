@@ -75,7 +75,7 @@ var game_core = function(game_instance){
 	};
 		
 	this.players = [];
-	this.self_player;
+	this.me;
 	
 	this.gamestate = {
 		cells : []
@@ -668,11 +668,8 @@ game_core.prototype.client_connect_to_server = function() {
 }; //game_core.client_connect_to_server
 
 game_core.prototype.client_onserveralldata = function(data){
-	var meIndex = data.playerIndex;
-
 	this.local_time = data.t+this.net_latency;
 	this.players = data.players;
-	this.me_uuid = data.uuid;
 	
 	delete this.gamestate.cells;
 	this.gamestate.cells = [];
@@ -682,6 +679,8 @@ game_core.prototype.client_onserveralldata = function(data){
 			data.gamestate.cells[i].radius,
 			data.gamestate.cells[i].velocity[0], data.gamestate.cells[i].velocity[1]));
 	}
+	
+	this.me = this.players[data.playerIndex];
 }
 
 game_core.prototype.client_create_ping_timer = function() {
