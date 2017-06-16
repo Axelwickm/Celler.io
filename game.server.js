@@ -12,21 +12,31 @@
     var
         game_server = module.exports = { game : null },
         UUID        = require('node-uuid'),
+		PythonShell = require('python-shell'),
         verbose     = true;
 
-        //Since we are sharing code with the browser, we
-        //are going to include some values to handle that.
+	//Since we are sharing code with the browser, we
+	//are going to include some values to handle that.
     global.window = global.document = global;
 
-        //Import shared game library code.
+    //Import shared game library code.
     require('./game.core.js');
-
-        //A simple wrapper for logging so we can toggle it,
-        //and augment it for clarity.
-    game_server.log = function() {
-        if(verbose) console.log.apply(this,arguments);
-    };
-
+	
+	// Getting the python server script
+	game_server.python_process = new PythonShell('./game.py',{mode:'json'});
+	console.log('Python process started');
+	
+	// Logging all prints in python file
+	game_server.python_process.on('message', function (message) {
+		if (message.event == 'print')
+			console.log('Python process: '+message.data);
+		else if (message.event == 'ongameupdate')
+			console.log('Python process gameupdate recieved');
+	});
+	game_server.python_process.on('error', function (err) {
+		if(err) throw err;
+	});
+	
     game_server.local_time = 0;
     game_server._dt = new Date().getTime();
     game_server._dte = new Date().getTime();
@@ -113,6 +123,13 @@
 			for (var i = 0; i<this.game.gamecore.players.length; i++){
 				this.game.gamecore.players[i].send('s.e');
 			}
+			
+			game_server.python_process.end(function (err) {
+				
+			// killing python process
+			if (err) throw err;
+				console.log('Python process killed');
+			});
 
         } else {
             this.log('The game was not found!');
