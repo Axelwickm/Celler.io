@@ -70,8 +70,8 @@ var game_core = function(game_instance){
 
 	//Used in collision etc.
 	this.world = {
-		width : 720,
-		height : 480
+		width : 1000,
+		height : 500
 	};
 		
 	this.players = [];
@@ -124,11 +124,12 @@ var game_core = function(game_instance){
 		
 		// Add some test cells to the gamestate
 	
-		for (var i = 0; i<10; i++){
-			this.gamestate.cells.push(new Cell(this, this.world.width*Math.random(), this.world.height*Math.random(), 20*Math.random(), 8*Math.random(), 8*Math.random()));
+		for (var i = 0; i<50; i++){
+			this.gamestate.cells.push(new Cell(this, this.world.width*Math.random(), this.world.height*Math.random(), 20*Math.random(), 500*Math.random()-250, 500*Math.random()-250));
 		};
 
 	} 
+	
 
 }; //game_core.constructor
 
@@ -458,8 +459,8 @@ game_core.prototype.create_timer = function(){
 
 game_core.prototype.create_physics_simulation = function() {
 	this.physics = new p2.World({gravity:[0,0]});
-	this.physics.defaultContactMaterial.friction = 0;
-	this.physics.defaultContactMaterial.stiffness = 1e6;
+	this.physics.defaultContactMaterial.friction = 0.5;
+	this.physics.defaultContactMaterial.stiffness = 800;
 	this.physics.defaultContactMaterial.restitution = 1;
 	
 	// World boundaries
