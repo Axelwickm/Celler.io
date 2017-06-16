@@ -369,66 +369,6 @@ game_core.prototype.client_click_cell = function(cellID){
 		this.gamestate.cells[cellID].color = '#ff0000';
 }
 
-game_core.prototype.client_handle_input = function(){
-
-    //if(this.lit > this.local_time) return;
-    //this.lit = this.local_time+0.5; //one second delay
-
-        //This takes input from the client and keeps a record,
-        //It also sends the input information to the server immediately
-        //as it is pressed. It also tags each input with a sequence number.
-	
-	if (game.dragging != -1)
-		game.dragging++;
-	
-    var x_dir = 0;
-    var y_dir = 0;
-    var input = [];
-    this.client_has_input = false;
-
-    if(input.length) {
-
-        //Update what sequence we are on now
-        this.input_seq += 1;
-
-        //Store the input state as a snapshot of what happened.
-        this.players.self.inputs.push({
-            inputs : input,
-            time : this.local_time.fixed(3),
-            seq : this.input_seq
-        });
-
-        //Send the packet of information to the server.
-        //The input packets are labelled with an 'i' in front.
-        var server_packet = 'i.';
-            server_packet += input.join('-') + '.';
-            server_packet += this.local_time.toFixed(3).replace('.','-') + '.';
-            server_packet += this.input_seq;
-
-        //Go
-        this.socket.send(  server_packet  );
-
-    }
-
-}; //game_core.client_handle_input
-
-game_core.prototype.client_onserverupdate_recieved = function(data){
-        
-	//Store the server time (this is offset by the latency in the network, by the time we get it)
-	this.server_time = data.t;
-	//Update our local offset time from the last server update
-	this.client_time = this.server_time - (this.net_offset/1000);
-
-	//One approach is to set the position directly as the server tells you.
-	//This is a common mistake and causes somewhat playable results on a local LAN, for example,
-	//but causes terrible lag when any ping/latency is introduced. The player can not deduce any
-	//information to interpolate with so it misses positions, and packet loss destroys this approach
-	//even more so. See 'the bouncing ball problem' on Wikipedia.
-
-	//* Update positions *//
-	
-
-}; //game_core.client_onserverupdate_recieved
 
 game_core.prototype.client_update_physics = function() {
 
@@ -493,37 +433,6 @@ game_core.prototype.create_physics_simulation = function() {
 
 }; //game_core.client_create_physics_simulation
 
-game_core.prototype.client_onserveralldata = function(data){
-	var meIndex = data.playerIndex;
-
-	this.local_time = data.t+this.net_latency;
-	this.players = data.players;
-	this.me_uuid = data.uuid;
-	
-	delete this.gamestate.cells;
-	this.gamestate.cells = [];
-	for (var i = 0; i<data.gamestate.cells.length; i++){
-		this.gamestate.cells.push(new Cell(this,
-			data.gamestate.cells[i].position[0], data.gamestate.cells[i].position[1],
-			data.gamestate.cells[i].radius,
-			data.gamestate.cells[i].velocity[0], data.gamestate.cells[i].velocity[1]));
-	}
-}
-
-
-game_core.prototype.client_create_ping_timer = function() {
-
-    //Set a ping timer to 1 second, to maintain the ping/latency between
-    //client and server and calculated roughly how our connection is doing
-
-    setInterval(function(){
-
-        this.last_ping_time = new Date().getTime();
-        this.socket.send('p.' + (this.last_ping_time) );
-
-    }.bind(this), 1000);
-    
-}; //game_core.client_create_ping_timer
 
 game_core.prototype.create_camera = function() {
 	this.camera = new Camera(this.ctx);
@@ -650,6 +559,146 @@ game_core.prototype.client_create_debug_gui = function() {
 
 }; //game_core.client_create_debug_gui
 
+game_core.prototype.client_refresh_fps = function() {
+
+        //We store the fps for 10 frames, by adding it to this accumulator
+    this.fps = 1/this.dt;
+    this.fps_avg_acc += this.fps;
+    this.fps_avg_count++;
+
+        //When we reach 10 frames we work out the average fps
+    if(this.fps_avg_count >= 10) {
+
+        this.fps_avg = this.fps_avg_acc/10;
+        this.fps_avg_count = 1;
+        this.fps_avg_acc = this.fps;
+
+    } //reached 10 frames
+
+}; //game_core.client_refresh_fps
+
+
+game_core.prototype.client_handle_input = function(){
+
+    //if(this.lit > this.local_time) return;
+    //this.lit = this.local_time+0.5; //one second delay
+
+        //This takes input from the client and keeps a record,
+        //It also sends the input information to the server immediately
+        //as it is pressed. It also tags each input with a sequence number.
+	
+	if (game.dragging != -1)
+		game.dragging++;
+	
+    var x_dir = 0;
+    var y_dir = 0;
+    var input = [];
+    this.client_has_input = false;
+
+    if(input.length) {
+
+        //Update what sequence we are on now
+        this.input_seq += 1;
+
+        //Store the input state as a snapshot of what happened.
+        this.players.self.inputs.push({
+            inputs : input,
+            time : this.local_time.fixed(3),
+            seq : this.input_seq
+        });
+
+        //Send the packet of information to the server.
+        //The input packets are labelled with an 'i' in front.
+        var server_packet = 'i.';
+            server_packet += input.join('-') + '.';
+            server_packet += this.local_time.toFixed(3).replace('.','-') + '.';
+            server_packet += this.input_seq;
+
+        //Go
+        this.socket.send( server_packet );
+
+    }
+
+}; //game_core.client_handle_input
+
+/* 
+	Client Net Code
+*/
+
+
+game_core.prototype.client_onserverupdate_recieved = function(data){
+        
+	//Store the server time (this is offset by the latency in the network, by the time we get it)
+	this.server_time = data.t;
+	//Update our local offset time from the last server update
+	this.client_time = this.server_time - (this.net_offset/1000);
+
+	//One approach is to set the position directly as the server tells you.
+	//This is a common mistake and causes somewhat playable results on a local LAN, for example,
+	//but causes terrible lag when any ping/latency is introduced. The player can not deduce any
+	//information to interpolate with so it misses positions, and packet loss destroys this approach
+	//even more so. See 'the bouncing ball problem' on Wikipedia.
+
+	//* Update positions *//
+	
+
+}; //game_core.client_onserverupdate_recieved
+
+
+game_core.prototype.client_connect_to_server = function() {
+        
+        //Store a local reference to our connection to the server
+        this.socket = io.connect();
+
+        //When we connect, we are not 'connected' until we have a server id
+        //and are placed in a game by the server. The server sends us a message for that.
+        this.socket.on('connect', function(){}.bind(this));
+
+        //Sent when we are disconnected (network, server down, etc)
+        this.socket.on('disconnect', this.client_ondisconnect.bind(this));
+        //Sent each tick of the server simulation. This is our authoritive update
+        this.socket.on('onserverupdate', this.client_onserverupdate_recieved.bind(this));
+		//Sent initally to update the whole game state
+        this.socket.on('onserveralldata', this.client_onserveralldata.bind(this));
+        //On error we just show that we are not connected for now. Can print the data.
+        this.socket.on('error', this.client_ondisconnect.bind(this));
+        //On message from the server, we parse the commands and send it to the handlers
+        this.socket.on('message', this.client_onnetmessage.bind(this));
+
+}; //game_core.client_connect_to_server
+
+game_core.prototype.client_onserveralldata = function(data){
+	var meIndex = data.playerIndex;
+
+	this.local_time = data.t+this.net_latency;
+	this.players = data.players;
+	this.me_uuid = data.uuid;
+	
+	delete this.gamestate.cells;
+	this.gamestate.cells = [];
+	for (var i = 0; i<data.gamestate.cells.length; i++){
+		this.gamestate.cells.push(new Cell(this,
+			data.gamestate.cells[i].position[0], data.gamestate.cells[i].position[1],
+			data.gamestate.cells[i].radius,
+			data.gamestate.cells[i].velocity[0], data.gamestate.cells[i].velocity[1]));
+	}
+}
+
+game_core.prototype.client_create_ping_timer = function() {
+
+    //Set a ping timer to 1 second, to maintain the ping/latency between
+    //client and server and calculated roughly how our connection is doing
+
+    setInterval(function(){
+
+        this.last_ping_time = new Date().getTime();
+        this.socket.send('p.' + (this.last_ping_time) );
+
+    }.bind(this), 1000);
+    
+}; //game_core.client_create_ping_timer
+
+
 
 game_core.prototype.client_onping = function(data) {
 
@@ -688,44 +737,7 @@ game_core.prototype.client_ondisconnect = function(data) {
 	console.log('Server disconnect');
 }; //client_ondisconnect
 
-game_core.prototype.client_connect_to_server = function() {
-        
-        //Store a local reference to our connection to the server
-        this.socket = io.connect();
-
-        //When we connect, we are not 'connected' until we have a server id
-        //and are placed in a game by the server. The server sends us a message for that.
-        this.socket.on('connect', function(){}.bind(this));
-
-        //Sent when we are disconnected (network, server down, etc)
-        this.socket.on('disconnect', this.client_ondisconnect.bind(this));
-        //Sent each tick of the server simulation. This is our authoritive update
-        this.socket.on('onserverupdate', this.client_onserverupdate_recieved.bind(this));
-		//Sent initally to update the whole game state
-        this.socket.on('onserveralldata', this.client_onserveralldata.bind(this));
-        //On error we just show that we are not connected for now. Can print the data.
-        this.socket.on('error', this.client_ondisconnect.bind(this));
-        //On message from the server, we parse the commands and send it to the handlers
-        this.socket.on('message', this.client_onnetmessage.bind(this));
-
-}; //game_core.client_connect_to_server
-
-
-game_core.prototype.client_refresh_fps = function() {
-
-        //We store the fps for 10 frames, by adding it to this accumulator
-    this.fps = 1/this.dt;
-    this.fps_avg_acc += this.fps;
-    this.fps_avg_count++;
-
-        //When we reach 10 frames we work out the average fps
-    if(this.fps_avg_count >= 10) {
-
-        this.fps_avg = this.fps_avg_acc/10;
-        this.fps_avg_count = 1;
-        this.fps_avg_acc = this.fps;
-
-    } //reached 10 frames
-
-}; //game_core.client_refresh_fps
+/* 
+	Server Net Code
+*/
 
