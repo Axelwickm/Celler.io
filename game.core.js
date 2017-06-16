@@ -22,7 +22,8 @@
 
 var frame_time = 1/60; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 1/22; //on server we run at 45ms, 22hz
-var physics_frame = 1/60; // physics_loop at 45 Hz
+var physics_frame = 1000/80; // physics updates at 80 Hz
+var physics_timestep = 1/80; // physics steps 41
 
 ( function () {
 
@@ -235,7 +236,7 @@ game_core.prototype.update = function(t) {
 
 
 game_core.prototype.update_physics = function() {
-	this.physics.step(physics_frame);
+	this.physics.step(physics_timestep);
 
     if(this.server) {
         this.server_update_physics();
@@ -429,7 +430,7 @@ game_core.prototype.create_physics_simulation = function() {
         this._pdt = (new Date().getTime() - this._pdte)/1000.0;
         this._pdte = new Date().getTime();
         this.update_physics();	
-    }.bind(this), 15);
+    }.bind(this), physics_frame);
 
 }; //game_core.client_create_physics_simulation
 
