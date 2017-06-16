@@ -614,6 +614,8 @@ game_core.prototype.client_create_debug_gui = function() {
         
         _debugsettings.add(this, 'fps_avg').listen();
         _debugsettings.add(this, 'local_time').listen();
+        _debugsettings.add(this, 'mouseX').listen();
+        _debugsettings.add(this, 'mouseY').listen();
 
         _debugsettings.open();
 
