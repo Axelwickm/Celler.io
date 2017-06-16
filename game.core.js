@@ -20,8 +20,9 @@
     // fixes from Paul Irish and Tino Zijdel
 
 
-var frame_time = 60/1000; // run the local game at 16ms/ 60hz
-if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 22hz
+var frame_time = 1/60; // run the local game at 16ms/ 60hz
+if('undefined' != typeof(global)) frame_time = 1/22; //on server we run at 45ms, 22hz
+var physics_frame = 1/60; // physics_loop at 45 Hz
 
 ( function () {
 
@@ -115,7 +116,7 @@ var game_core = function(game_instance){
 		
 		//Create debug gui
 		this.client_create_debug_gui();
-
+		
 	} else { //if !server
 
 		this.server_time = 0;
@@ -233,7 +234,7 @@ game_core.prototype.update = function(t) {
 
 
 game_core.prototype.update_physics = function() {
-	this.physics.step(frame_time);
+	this.physics.step(physics_frame);
 
     if(this.server) {
         this.server_update_physics();
@@ -489,6 +490,9 @@ game_core.prototype.client_onserveralldata = function(data){
 	this.local_time = data.t+this.net_latency;
 	this.players = data.players;
 	this.me_uuid = data.uuid;
+	
+	delete this.gamestate.cells;
+	this.gamestate.cells = [];
 	for (var i = 0; i<data.gamestate.cells.length; i++){
 		this.gamestate.cells.push(new Cell(this,
 			data.gamestate.cells[i].position[0], data.gamestate.cells[i].position[1],
@@ -515,11 +519,6 @@ game_core.prototype.client_create_ping_timer = function() {
 game_core.prototype.create_camera = function() {
 	this.camera = new Camera(this.ctx);
 	this.camera.zoomTo(2000);
-	
-	this.mouseX = 0;
-	this.mouseY = 0;
-	this.oldMouse = {x:0, y:0}
-	this.dragging = -1;
 	
 	this.viewport.onmousemove = function(e){
 		e = e || window.event;
@@ -601,6 +600,11 @@ game_core.prototype.client_create_configuration = function() {
 
     this.lit = 0;
     this.llt = new Date().getTime();
+	
+	this.mouseX = 0;
+	this.mouseY = 0;
+	this.oldMouse = {x:0, y:0}
+	this.dragging = -1;
 
 };//game_core.client_create_configuration
 
