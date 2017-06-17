@@ -147,6 +147,7 @@ if( 'undefined' != typeof global ) module.exports = global.game_core = game_core
 */
 var game_state = function(isServer){
 	this.server = isServer;
+	this.client_inital = true;
 	
 	this.cells = [];
 	this.players = [];
@@ -208,6 +209,9 @@ game_state.prototype.server_get_changes = function(simulation_status){
 }
 game_state.prototype.client_load_changes = function(data){
 	console.log('Client input '+JSON.stringify(data));
+	
+	
+	this.client_inital = false;
 }
 
 /* The Player class */
