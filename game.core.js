@@ -173,9 +173,11 @@ game_state.prototype.edit = function(obj, p, v){
 	}
 }
 
-game_state.prototype.server_get_changes = function(full){
+
+game_state.prototype.server_get_changes = function(simulation_status){ 
 	var changes = [];
 	var blacklist = ['update', 'body'];
+	var send = ['cells','players']
 	
 	for (var i = 0; i<this.cells.length; i++){
 		var obj = this.cells[i];
@@ -186,6 +188,13 @@ game_state.prototype.server_get_changes = function(full){
 			// Add the changed property with value to this change 
 			change[obj.update.data[j]] = obj[obj.update.data[j]];
 		}
+		// Adding simulation data which is otherwise hidden in body member
+		if (simulation_status && obj.body){
+			change.pos = obj.body.position;
+			change.ang = obj.body.angle;
+			change.vel = obj.body.velocity;
+			change.angvel = obj.body.angularVelocity;
+		}
 		//Push the type of action made
 		change.e = obj.update.e;
 		// Push change to changes array
@@ -195,7 +204,7 @@ game_state.prototype.server_get_changes = function(full){
 		obj.update.data = [];
 	}
 	// Return in object wrapper
-	return {changes:changes}; 
+	return {c:changes}; 
 }
 game_state.prototype.client_load_changes = function(data){
 	console.log('Client input '+JSON.stringify(data));
