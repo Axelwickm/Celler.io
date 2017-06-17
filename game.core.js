@@ -180,17 +180,22 @@ game_state.prototype.server_get_changes = function(full){
 	for (var i = 0; i<this.cells.length; i++){
 		var obj = this.cells[i];
 		var change = {};
-		for (var j = 0; j<obj.update.data.length; j++){
-			if (blacklist.indexOf(obj.update.data[j]) != -1) continue; // Skip if property is blacklisted
+		for (var j = 0; j<obj.update.data.length; j++){ // Loop through changed properties
+			// Skip if property is blacklisted
+			if (blacklist.indexOf(obj.update.data[j]) != -1) continue; 
+			// Add the changed property with value to this change 
 			change[obj.update.data[j]] = obj[obj.update.data[j]];
 		}
+		//Push the type of action made
 		change.e = obj.update.e;
+		// Push change to changes array
 		changes.push(change);
+		// Remove update data
 		obj.update.e = '';
 		obj.update.data = [];
 	}
-	
-	return {changes:changes};
+	// Return in object wrapper
+	return {changes:changes}; 
 }
 game_state.prototype.client_load_changes = function(data){
 	console.log('Client input '+JSON.stringify(data));
