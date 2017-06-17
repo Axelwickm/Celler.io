@@ -125,10 +125,9 @@
 			}
 			
 			game_server.python_process.end(function (err) {
-				
-			// killing python process
-			if (err) throw err;
-				console.log('Python process killed');
+				// killing python process
+				if (err) throw err;
+					console.log('Python process killed');
 			});
 
         } else {
