@@ -68,6 +68,7 @@ var game_core = function(game_instance){
 	
 	
 	console.log('Is server: '+this.server);
+	
 
 	//Used in collision etc.
 	this.world = {
@@ -93,6 +94,10 @@ var game_core = function(game_instance){
 	//Start a physics loop, this is separate to the rendering
 	//as this happens at a fixed frequency
 	this.create_physics_simulation();
+	
+	this.gs = new game_state(this.server);
+	this.gs.add(new Cell(this, 50, 60, 5, 100, 100));
+	this.gs.edit(this.gs.cells[0], 'radius', 6);
 
 	//Start a fast paced timer for measuring time easier
 	this.create_timer();
@@ -121,7 +126,6 @@ var game_core = function(game_instance){
 	} else { //if !server
 
 		this.server_time = 0;
-		this.laststate = {};
 		
 		// Add some test cells to the gamestate
 	
@@ -129,25 +133,83 @@ var game_core = function(game_instance){
 			this.gamestate.cells.push(new Cell(this, this.world.width*Math.random(), this.world.height*Math.random(), 20*Math.random(), 500*Math.random()-250, 500*Math.random()-250));
 		};
 
-	} 
-	
+	}
 
 }; //game_core.constructor
 
 //server side we set the 'game_core' class to a global type, so that it can use it anywhere.
 if( 'undefined' != typeof global ) module.exports = global.game_core = game_core;
 
+
+/*
+	The gamestate class
+	Contains the actuall game data and logs the changes made to it 
+*/
+var game_state = function(isServer){
+	this.server = isServer;
 	
+	this.cells = [];
+	this.players = [];
+}
+
+game_state.prototype.add = function(obj){
+	this[obj.type].push(obj);
+	if (this.server){
+		obj.update = {e:'add',data:[]};
+		for (var prop in obj){
+			if (obj.hasOwnProperty(prop)){
+				obj.update.data.push(prop);
+			}
+		}
+	}	
+}
+
+game_state.prototype.edit = function(obj, p, v){
+	obj[p] = v;
+	// 'add' and 'delete' takes priority over 'edit'
+	if (this.server && (obj.update.length == 0 || obj.update.e == 'edit')){
+		obj.update.e = 'edit';
+		obj.update.data.push(p);
+	}
+}
+
+game_state.prototype.server_get_changes = function(full){
+	var changes = [];
+	var blacklist = ['update', 'body'];
 	
+	for (var i = 0; i<this.cells.length; i++){
+		var obj = this.cells[i];
+		var change = {};
+		for (var j = 0; j<obj.update.data.length; j++){
+			if (blacklist.indexOf(obj.update.data[j]) != -1) continue; // Skip if property is blacklisted
+			change[obj.update.data[j]] = obj[obj.update.data[j]];
+		}
+		change.e = obj.update.e;
+		changes.push(change);
+		obj.update.e = '';
+		obj.update.data = [];
+	}
+	
+	return {changes:changes};
+}
+game_state.prototype.client_load_changes = function(data){
+	console.log('Client input '+JSON.stringify(data));
+}
+
 /* The Player class */
+
 var Player = function(client){
+	this.type = 'players';
 	this.instance = client;
 	this.userid = client.userid;
 }
 
-/* Gameplay classes */
+/*
+	Gameplay classes
+*/
 
-var Cell = function(gamecore, x, y, r, vx, vy){	
+var Cell = function(gamecore, x, y, r, vx, vy){
+	this.type = 'cells';
 	this.body = new p2.Body({
 		mass: 10,
 		position: [x, y],
@@ -217,10 +279,10 @@ game_core.prototype.update = function(t) {
     this.lastframetime = t;
 
         //Update the game specifics
-    if(!this.server) {
-        this.client_update();
+    if(this.server) {
+		this.server_update();
     } else {
-        this.server_update();
+        this.client_update();
     }
 
         //schedule the next update
@@ -257,26 +319,25 @@ game_core.prototype.update_physics = function() {
 
     //Updated at 15ms , simulates the world state
 game_core.prototype.server_update_physics = function() {
-
+	if (this.server_time>5 && this.gs.cells.length == 1) this.gs.add(new Cell(this, 4, 2, 3, 100, 100));
 }; //game_core.server_update_physics
 
-    //Makes sure things run smoothly and notifies clients of changes
-    //on the server side
+//Makes sure things run smoothly and notifies clients of changes
+//on the server side
 game_core.prototype.server_update = function(){
 
-        //Update the state of our local clock to match the timer
+    //Update the state of our local clock to match the timer
     this.server_time = this.local_time;
 
-        //Make a snapshot of the current state, for updating the clients
-    this.laststate = {
-        t : this.server_time                      // our current local time on the server
-    };
+    //Make a snapshot of the current state, for updating the clients
+	var gamestate_change = this.gs.server_get_changes(false);
+	gamestate_change.t = this.server_time;
 
 	for (var i = 0; i<this.players.length; i++){
-		this.players[i].instance.emit( 'onserverupdate', this.laststate );
+		this.players[i].instance.emit( 'onserverupdate', gamestate_change);
 	}
 
-}; //game_core.server_update
+};
 
 game_core.prototype.server_new_player = function(client){
 	var player = new Player(client);
@@ -314,6 +375,7 @@ game_core.prototype.server_new_player = function(client){
 	} 
 	
 	player.instance.emit('onserveralldata', gamestate_to_client);
+	player.instance.emit('onserverupdate', this.gs.server_get_changes(true));
 	
 	console.log('Player connected - ID: '+player.userid);
 }; //game_core.server_new_player
@@ -634,14 +696,9 @@ game_core.prototype.client_onserverupdate_recieved = function(data){
 	this.server_time = data.t;
 	//Update our local offset time from the last server update
 	this.client_time = this.server_time - (this.net_offset/1000);
-
-	//One approach is to set the position directly as the server tells you.
-	//This is a common mistake and causes somewhat playable results on a local LAN, for example,
-	//but causes terrible lag when any ping/latency is introduced. The player can not deduce any
-	//information to interpolate with so it misses positions, and packet loss destroys this approach
-	//even more so. See 'the bouncing ball problem' on Wikipedia.
-
-	//* Update positions *//
+	
+	// Load the data into gamestate
+	this.gs.client_load_changes(data);
 	
 
 }; //game_core.client_onserverupdate_recieved
