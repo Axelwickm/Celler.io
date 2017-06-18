@@ -175,19 +175,35 @@ game_state.prototype.edit = function(obj, p, v){
 }
 
 
-game_state.prototype.server_get_changes = function(simulation_status){ 
+// TODO: Delete object, loop through all game state objects, update cell and player construction, replace old system
+game_state.prototype.server_get_changes = function(simulation_status, all_data){ 
+	
 	var changes = [];
 	var blacklist = ['update', 'body'];
-	var send = ['cells','players']
 	
-	for (var i = 0; i<this.cells.length; i++){
-		var obj = this.cells[i];
+	// Loop through both cells and players
+	for (var i = 0; i < this.cells.length + this.players.length; i++){
+		var obj;
+		if (i < this.cells.length)
+			obj = this.cells[i];
+		else
+			obj = this.players[i - this.cells.length];
+		// The change variable of this object
 		var change = {};
-		for (var j = 0; j<obj.update.data.length; j++){ // Loop through changed properties
-			// Skip if property is blacklisted
-			if (blacklist.indexOf(obj.update.data[j]) != -1) continue; 
-			// Add the changed property with value to this change 
-			change[obj.update.data[j]] = obj[obj.update.data[j]];
+		if (all_data){
+			for (var prop in obj){
+				// Skip if property is blacklisted
+				if (blacklist.indexOf(prop) != -1) continue;
+				change[prop] = obj[prop];
+			}
+		}
+		else {
+			for (var j = 0; j<obj.update.data.length; j++){ // Loop through changed properties
+				// Skip if property is blacklisted
+				if (blacklist.indexOf(obj.update.data[j]) != -1) continue; 
+				// Add the changed property with value to this change 
+				change[obj.update.data[j]] = obj[obj.update.data[j]];
+			}
 		}
 		// Adding simulation data which is otherwise hidden in body member
 		if (simulation_status && obj.body){
@@ -348,7 +364,7 @@ game_core.prototype.server_update = function(){
     this.server_time = this.local_time;
 
     //Make a snapshot of the current state, for updating the clients
-	var gamestate_change = this.gs.server_get_changes(false);
+	var gamestate_change = this.gs.server_get_changes(false, false);
 	gamestate_change.t = this.server_time;
 
 	for (var i = 0; i<this.players.length; i++){
@@ -393,7 +409,7 @@ game_core.prototype.server_new_player = function(client){
 	} 
 	
 	player.instance.emit('onserveralldata', gamestate_to_client);
-	player.instance.emit('onserverupdate', this.gs.server_get_changes(true));
+	player.instance.emit('onserverupdate', this.gs.server_get_changes(true, true));
 	
 	console.log('Player connected - ID: '+player.userid);
 }; //game_core.server_new_player
