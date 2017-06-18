@@ -79,10 +79,7 @@ var game_core = function(game_instance){
 	this.players = [];
 	this.me;
 	
-	this.gamestate = {
-		cells : []
-	}
-	
+
 	//Set up some physics integration values
 	this._pdt = 0.0001;                 //The physics update delta time
 	this._pdte = new Date().getTime();  //The physics update last delta time
@@ -95,9 +92,7 @@ var game_core = function(game_instance){
 	//as this happens at a fixed frequency
 	this.create_physics_simulation();
 	
-	this.gs = new game_state(this.server);
-	this.gs.add(new Cell(this, 50, 60, 5, 100, 100));
-	this.gs.edit(this.gs.cells[0], 'radius', 6);
+	this.gs = new game_state(this);
 
 	//Start a fast paced timer for measuring time easier
 	this.create_timer();
@@ -130,9 +125,8 @@ var game_core = function(game_instance){
 		// Add some test cells to the gamestate
 	
 		for (var i = 0; i<50; i++){
-			this.gamestate.cells.push(new Cell(this, this.world.width*Math.random(), this.world.height*Math.random(), 20*Math.random(), 500*Math.random()-250, 500*Math.random()-250));
+			this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
 		};
-
 	}
 
 }; //game_core.constructor
@@ -145,8 +139,9 @@ if( 'undefined' != typeof global ) module.exports = global.game_core = game_core
 	The gamestate class
 	Contains the actuall game data and logs the changes made to it 
 */
-var game_state = function(isServer){
-	this.server = isServer;
+var game_state = function(gamecore){
+	this.gamecore = gamecore;
+	this.server = gamecore.server;
 	this.client_inital = true;
 	
 	this.cells = [];
@@ -175,11 +170,10 @@ game_state.prototype.edit = function(obj, p, v){
 }
 
 
-// TODO: Delete object, loop through all game state objects, update cell and player construction, replace old system
+// TODO: Delete object, update cell and player construction, replace old system
 game_state.prototype.server_get_changes = function(simulation_status, all_data){ 
-	
+	var blacklist = ['update', 'body', 'instance'];
 	var changes = [];
-	var blacklist = ['update', 'body'];
 	
 	// Loop through both cells and players
 	for (var i = 0; i < this.cells.length + this.players.length; i++){
@@ -224,8 +218,13 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 	return {c:changes}; 
 }
 game_state.prototype.client_load_changes = function(data){
-	console.log('Client input '+JSON.stringify(data));
-	
+	//console.log('Client input '+JSON.stringify(data));
+	if (this.client_inital){
+		for (var i = 0; i<data.c.length; i++){
+			if (data.c[i].type == 'cells')
+				this.add(new Cell(this.gamecore, data.c[i]));
+		}
+	}
 	
 	this.client_inital = false;
 }
@@ -242,27 +241,29 @@ var Player = function(client){
 	Gameplay classes
 */
 
-var Cell = function(gamecore, x, y, r, vx, vy){
-	this.type = 'cells';
+
+var Cell = function(gamecore, options){
+	this.type = options.type || 'cells';
+	this.food = options.food || 5;
+	this.color = options.color || '#ff0000';
 	this.body = new p2.Body({
-		mass: 10,
-		position: [x, y],
-		velocity: [vx, vy],
+		mass: this.food,
+		position: options.pos,
+		velocity: options.vel || [0,0],
 		damping:0.00
 	});
-	this.radius = r;
-	var circleShape = new p2.Circle({ radius: r });
+		
+	var circleShape = new p2.Circle({ radius: 8*Math.sqrt(this.food/Math.PI) });
 	this.body.addShape(circleShape);
 	
 	gamecore.physics.addBody(this.body);
-	
-	this.color = '#ff0000';
 }
+
 
 Cell.prototype.draw = function(){
 	game.ctx.fillStyle = this.color;
     game.ctx.beginPath();
-	game.ctx.arc( this.body.position[0], this.body.position[1], this.radius, 0, Math.PI * 2 );
+	game.ctx.arc( this.body.position[0], this.body.position[1], this.body.shapes[0].radius, 0, Math.PI * 2 );
 	game.ctx.fill();
 }
 
@@ -339,7 +340,7 @@ game_core.prototype.update_physics = function() {
     } else {
         this.client_update_physics();
     }
-
+	
 }; //game_core.prototype.update_physics
 
 /*
@@ -353,7 +354,8 @@ game_core.prototype.update_physics = function() {
 
     //Updated at 15ms , simulates the world state
 game_core.prototype.server_update_physics = function() {
-	if (this.server_time>5 && this.gs.cells.length == 1) this.gs.add(new Cell(this, 4, 2, 3, 100, 100));
+	if (this.server_time>5 && this.gs.cells.length == 1)
+		this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
 }; //game_core.server_update_physics
 
 //Makes sure things run smoothly and notifies clients of changes
@@ -385,27 +387,11 @@ game_core.prototype.server_new_player = function(client){
 		players.push(n);
 	}
 	
-	var gamestate = {
-		cells:[]
-	};
-	for (var i = 0; i<this.gamestate.cells.length; i++){
-		n = {
-			position:this.gamestate.cells[i].body.position,
-			velocity:this.gamestate.cells[i].body.velocity,
-			mass:this.gamestate.cells[i].body.mass,
-			damping:this.gamestate.cells[i].body.damping,
-			radius:this.gamestate.cells[i].radius,
-			color:this.color
-		}
-		gamestate.cells.push(n);
-	}
 	
 	var gamestate_to_client = {
 		t:this.server_time,
 		uuid:player.instance.uuid,
-		players:players,
-		playerIndex:this.players.length-1,
-		gamestate:gamestate
+		players:players
 	} 
 	
 	player.instance.emit('onserveralldata', gamestate_to_client);
@@ -460,10 +446,10 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
 
 game_core.prototype.client_click_cell = function(cellID){
 	
-	if (this.gamestate.cells[cellID].color == '#ff0000')
-		this.gamestate.cells[cellID].color = '#00ff66';
+	if (this.gs.cells[cellID].color == '#ff0000')
+		this.gs.cells[cellID].color = '#00ff66';
 	else
-		this.gamestate.cells[cellID].color = '#ff0000';
+		this.gs.cells[cellID].color = '#ff0000';
 }
 
 
@@ -480,8 +466,8 @@ game_core.prototype.client_update = function() {
 	
 	this.camera.begin();
 	
-	for (var i = 0; i<this.gamestate.cells.length; i++)
-		this.gamestate.cells[i].draw();
+	for (var i = 0; i<this.gs.cells.length; i++)
+		this.gs.cells[i].draw();
 	
 	this.camera.end();
 
@@ -557,8 +543,8 @@ game_core.prototype.create_camera = function() {
 		var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
 		
 		if (clicked_cell_bodies.length != 0){
-			for(var i = 0; i<game.gamestate.cells.length; i++)
-				if (game.gamestate.cells[i].body == clicked_cell_bodies[0]){
+			for(var i = 0; i<game.gs.cells.length; i++)
+				if (game.gs.cells[i].body == clicked_cell_bodies[0]){
 					game.client_click_cell(i);
 					break;
 				}	
@@ -763,15 +749,6 @@ game_core.prototype.client_connect_to_server = function() {
 game_core.prototype.client_onserveralldata = function(data){
 	this.local_time = data.t+this.net_latency;
 	this.players = data.players;
-	
-	delete this.gamestate.cells;
-	this.gamestate.cells = [];
-	for (var i = 0; i<data.gamestate.cells.length; i++){
-		this.gamestate.cells.push(new Cell(this,
-			data.gamestate.cells[i].position[0], data.gamestate.cells[i].position[1],
-			data.gamestate.cells[i].radius,
-			data.gamestate.cells[i].velocity[0], data.gamestate.cells[i].velocity[1]));
-	}
 	
 	this.me = this.players[data.playerIndex];
 }
