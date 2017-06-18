@@ -142,7 +142,7 @@ if( 'undefined' != typeof global ) module.exports = global.game_core = game_core
 var game_state = function(gamecore){
 	this.gamecore = gamecore;
 	this.server = gamecore.server;
-	this.client_inital = true;
+	this.client_initial = true;
 	
 	this.cells = [];
 	this.players = [];
@@ -163,14 +163,14 @@ game_state.prototype.add = function(obj){
 game_state.prototype.edit = function(obj, p, v){
 	obj[p] = v;
 	// 'add' and 'delete' takes priority over 'edit'
-	if (this.server && (obj.update.length == 0 || obj.update.e == 'edit')){
+	if (this.server && (obj.update.e.length == 0 || obj.update.e == 'edit')){
 		obj.update.e = 'edit';
 		obj.update.data.push(p);
 	}
 }
 
 
-// TODO: Delete object, update cell and player construction, replace old system
+// TODO: Delete object, update player construction, replace old system
 game_state.prototype.server_get_changes = function(simulation_status, all_data){ 
 	var blacklist = ['update', 'body', 'instance'];
 	var changes = [];
@@ -208,6 +208,7 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 		}
 		//Push the type of action made
 		change.e = obj.update.e;
+		change.type = obj.type;
 		// Push change to changes array
 		changes.push(change);
 		// Remove update data
@@ -217,16 +218,24 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 	// Return in object wrapper
 	return {c:changes}; 
 }
+
 game_state.prototype.client_load_changes = function(data){
-	//console.log('Client input '+JSON.stringify(data));
-	if (this.client_inital){
-		for (var i = 0; i<data.c.length; i++){
-			if (data.c[i].type == 'cells')
-				this.add(new Cell(this.gamecore, data.c[i]));
+	var cell_i = 0, player_i = 0;
+	for (var i = 0; i<data.c.length; i++){
+		var change = data.c[i];
+		if (change.type == 'cells'){
+			if (change.e == 'add' || this.client_initial) this.add(new Cell(this.gamecore, change));
+			else if (change.e == 'edit') {
+				for (var prop in change)
+					if (prop != 'e') this.cells[cell_i][prop] = change[prop];
+			}
+			cell_i++;
 		}
+		
 	}
 	
-	this.client_inital = false;
+	
+	this.client_initial = false;
 }
 
 /* The Player class */
@@ -354,8 +363,11 @@ game_core.prototype.update_physics = function() {
 
     //Updated at 15ms , simulates the world state
 game_core.prototype.server_update_physics = function() {
-	if (this.server_time>5 && this.gs.cells.length == 1)
-		this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
+	if (this.server_time>5 && this.gs.cells[0].color != '#00ff00'){
+		this.gs.edit(this.gs.cells[0], 'color','#00ff00');
+	}
+
+		//this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
 }; //game_core.server_update_physics
 
 //Makes sure things run smoothly and notifies clients of changes
