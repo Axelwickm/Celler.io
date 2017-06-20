@@ -24,6 +24,7 @@ var frame_time = 1/60; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 1/22; //on server we run at 45ms, 22hz
 var physics_frame = 1000/80; // physics updates at 80 Hz
 var physics_timestep = 1/80; // physics steps 41
+var server_physics_update_every = 50; // Incudes physics updates every 50th update
 
 ( function () {
 
@@ -125,8 +126,8 @@ var game_core = function(game_instance){
 		
 		// Add some test cells to the gamestate
 	
-		for (var i = 0; i<50; i++){
-			this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
+		for (var i = 0; i<100; i++){
+			this.gs.add(new Cell(this, {p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],p_vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
 		};
 	}
 
@@ -202,17 +203,18 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 		}
 		// Adding simulation data which is otherwise hidden in body member
 		if (simulation_status && obj.body){
-			change.pos = obj.body.position;
-			change.ang = obj.body.angle;
-			change.vel = obj.body.velocity;
-			change.angvel = obj.body.angularVelocity;
+			change.p_pos = obj.body.position;
+			change.p_ang = obj.body.angle;
+			change.p_vel = obj.body.velocity;
+			change.p_angvel = obj.body.angularVelocity;
 		}
 		//Push the type of action made
 		change.e = obj.update.e;
 		change.type = obj.type;
 		change.update_id = i % this.cells.length;
+		if (3<Object.keys(change).length && change.e == '') change.e = 'edit';
 		// Push change to changes array
-		if (3<Object.keys(change).length || all_data)
+		if (change.e != '' || all_data)
 			changes.push(change);
 		// Remove update data
 		obj.update.e = '';
@@ -231,11 +233,17 @@ game_state.prototype.client_load_changes = function(data){
 			if (change.e == 'add' || this.client_initial) this.add(new Cell(this.gamecore, change));
 			else if (change.e == 'edit') {
 				for (var prop in change){
-					if (prop != 'e') this.cells[change.update_id][prop] = change[prop];
+					if (prop != 'e' && prop.substring(0,2) == 'p_') {
+						var p_property = prop.substring(2);
+						if (p_property == 'pos')	 	 this.cells[change.update_id].body['position'] = change[prop];
+						else if (p_property == 'ang') 	 this.cells[change.update_id].body['angle'] = change[prop];
+						else if (p_property == 'vel')	 this.cells[change.update_id].body['velocity'] = change[prop];
+						else if (p_property == 'angvel') this.cells[change.update_id].body['angularVelocity'] = change[prop];
+					}
+					else if (prop != 'e' ) this.cells[change.update_id][prop] = change[prop];
 				}
 			}
 		}
-		
 	}
 	
 	
@@ -261,10 +269,10 @@ var Cell = function(gamecore, options){
 	this.color = options.color || '#ff0000';
 	this.body = new p2.Body({
 		mass: this.food,
-		position: options.pos,
-		angle: options.angle || 0,
-		velocity: options.vel || [0,0],
-		angularVelocity: options.angvel || 0,
+		position: options.p_pos,
+		angle: options.p_angle || 0,
+		velocity: options.p_vel || [0,0],
+		angularVelocity: options.p_angvel || 0,
 		damping:0.00
 	});
 		
@@ -386,7 +394,7 @@ game_core.prototype.server_update = function(){
 
     //Make a snapshot of the current state, for updating the clients
 	var gamestate_change;
-	if (this.server_updates%20 == 0)
+	if (this.server_updates%server_physics_update_every == 0)
 		gamestate_change = this.gs.server_get_changes(true, false);
 	else
 		gamestate_change = this.gs.server_get_changes(false, false);
