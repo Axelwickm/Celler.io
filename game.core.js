@@ -226,14 +226,12 @@ game_state.prototype.client_load_changes = function(data){
 	for (var i = 0; i<data.c.length; i++){
 		var change = data.c[i];
 		if (change.type == 'cells'){
-			console.log('Client inital '+this.client_initial);
 			if (change.e == 'add' || this.client_initial) this.add(new Cell(this.gamecore, change));
 			else if (change.e == 'edit') {
 				for (var prop in change){
 					if (prop != 'e') this.cells[change.update_id][prop] = change[prop];
 				}
 			}
-			cell_i++;
 		}
 		
 	}
