@@ -121,6 +121,7 @@ var game_core = function(game_instance){
 	} else { //if !server
 
 		this.server_time = 0;
+		this.server_updates = 0;
 		
 		// Add some test cells to the gamestate
 	
@@ -211,7 +212,7 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 		change.type = obj.type;
 		change.update_id = i % this.cells.length;
 		// Push change to changes array
-		if (change.e != '' || all_data)
+		if (3<Object.keys(change).length || all_data)
 			changes.push(change);
 		// Remove update data
 		obj.update.e = '';
@@ -222,6 +223,7 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 }
 
 game_state.prototype.client_load_changes = function(data){
+	//console.log(JSON.stringify(data));
 	var player_i = 0;
 	for (var i = 0; i<data.c.length; i++){
 		var change = data.c[i];
@@ -260,7 +262,9 @@ var Cell = function(gamecore, options){
 	this.body = new p2.Body({
 		mass: this.food,
 		position: options.pos,
+		angle: options.angle || 0,
 		velocity: options.vel || [0,0],
+		angularVelocity: options.angvel || 0,
 		damping:0.00
 	});
 		
@@ -378,11 +382,17 @@ game_core.prototype.server_update = function(){
 
     //Update the state of our local clock to match the timer
     this.server_time = this.local_time;
+	this.server_updates++;
 
     //Make a snapshot of the current state, for updating the clients
-	var gamestate_change = this.gs.server_get_changes(false, false);
+	var gamestate_change;
+	if (this.server_updates%20 == 0)
+		gamestate_change = this.gs.server_get_changes(true, false);
+	else
+		gamestate_change = this.gs.server_get_changes(false, false);
+	
 	gamestate_change.t = this.server_time;
-
+	
 	for (var i = 0; i<this.players.length; i++){
 		this.players[i].instance.emit( 'onserverupdate', gamestate_change);
 	}
@@ -553,7 +563,6 @@ game_core.prototype.create_camera = function() {
 	this.viewport.onclick = function(e){
 		e = e || window.event;
 		var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
-		console.log('click! '+game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies).length);
 		var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
 		
 		if (clicked_cell_bodies.length != 0){
