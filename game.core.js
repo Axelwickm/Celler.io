@@ -181,13 +181,13 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 		if (i < this.cells.length)
 			obj = this.cells[i];
 		else
-			obj = this.players[i - this.cells.length];
+			obj = this.players[i % this.cells.length];
 		// The change variable of this object
 		var change = {};
 		if (all_data){
 			for (var prop in obj){
 				// Skip if property is blacklisted
-				if (blacklist.indexOf(prop) != -1) continue;
+				if (blacklist.indexOf(prop) != -1 || !obj.hasOwnProperty(prop)) continue;
 				change[prop] = obj[prop];
 			}
 		}
@@ -209,8 +209,10 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 		//Push the type of action made
 		change.e = obj.update.e;
 		change.type = obj.type;
+		change.update_id = i % this.cells.length;
 		// Push change to changes array
-		changes.push(change);
+		if (change.e != '' || all_data)
+			changes.push(change);
 		// Remove update data
 		obj.update.e = '';
 		obj.update.data = [];
@@ -220,14 +222,16 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 }
 
 game_state.prototype.client_load_changes = function(data){
-	var cell_i = 0, player_i = 0;
+	var player_i = 0;
 	for (var i = 0; i<data.c.length; i++){
 		var change = data.c[i];
 		if (change.type == 'cells'){
+			console.log('Client inital '+this.client_initial);
 			if (change.e == 'add' || this.client_initial) this.add(new Cell(this.gamecore, change));
 			else if (change.e == 'edit') {
-				for (var prop in change)
-					if (prop != 'e') this.cells[cell_i][prop] = change[prop];
+				for (var prop in change){
+					if (prop != 'e') this.cells[change.update_id][prop] = change[prop];
+				}
 			}
 			cell_i++;
 		}
