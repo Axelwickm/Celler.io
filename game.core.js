@@ -76,8 +76,6 @@ var game_core = function(game_instance){
 		width : 1000,
 		height : 500
 	};
-		
-	this.players = [];
 	this.me;
 	
 
@@ -212,7 +210,7 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 		change.e = obj.update.e;
 		change.type = obj.type;
 		change.update_id = i % this.cells.length;
-		if (3<Object.keys(change).length && change.e == '') change.e = 'edit';
+		if (3<Object.keys(change).length && change.e == '' && !all_data) change.e = 'edit';
 		// Push change to changes array
 		if (change.e != '' || all_data)
 			changes.push(change);
@@ -241,6 +239,14 @@ game_state.prototype.client_load_changes = function(data){
 						else if (p_property == 'angvel') this.cells[change.update_id].body['angularVelocity'] = change[prop];
 					}
 					else if (prop != 'e' ) this.cells[change.update_id][prop] = change[prop];
+				}
+			}
+		}
+		else if (change.type == 'players'){
+			if (change.e == 'add' || this.client_initial) this.add(new Players(this.gamecore, change));
+			else if (change.e == 'edit'){
+				for (var prop in change){
+					if (prop != 'e' ) this.players[change.update_id][prop] = change[prop];
 				}
 			}
 		}
@@ -401,47 +407,34 @@ game_core.prototype.server_update = function(){
 	
 	gamestate_change.t = this.server_time;
 	
-	for (var i = 0; i<this.players.length; i++){
-		this.players[i].instance.emit( 'onserverupdate', gamestate_change);
+	for (var i = 0; i<this.gs.players.length; i++){
+		this.gs.players[i].instance.emit( 'onserverupdate', gamestate_change);
 	}
 
 };
 
 game_core.prototype.server_new_player = function(client){
 	var player = new Player(client);
-	this.players.push(player);
+	this.gs.add(player);
 	
-	var players = [];
-	for (var i = 0; i<this.players.length; i++){
-		n = {
-			uuid:this.players[i].instance.uuid
-		}
-		players.push(n);
-	}
+	var gamestate_to_client = this.gs.server_get_changes(true, true);
+	gamestate_to_client.t = this.server_time;
 	
-	
-	var gamestate_to_client = {
-		t:this.server_time,
-		uuid:player.instance.uuid,
-		players:players
-	} 
-	
-	player.instance.emit('onserveralldata', gamestate_to_client);
-	player.instance.emit('onserverupdate', this.gs.server_get_changes(true, true));
+	player.instance.emit('onserverupdate', gamestate_to_client);
 	
 	console.log('Player connected - ID: '+player.userid);
 }; //game_core.server_new_player
 
 game_core.prototype.server_player_leave = function(client){
 	var index = null;
-	for (var i = 0; i < this.players.length; i++){
-		if (this.players[i].userid == client.userid){
+	for (var i = 0; i < this.gs.players.length; i++){
+		if (this.gs.players[i].userid == client.userid){
 			index = i;
 			break;
 		}
 	}
-	console.log('Player left - ID: '+this.players[index].userid);
-	this.players.splice(index, 1);
+	console.log('Player left - ID: '+this.gs.players[index].userid);
+	this.gs.erase(this.gs.players[index]);
 	
 }; //game_core.server_player_leave
 
@@ -451,9 +444,9 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
     //Fetch which client this refers to
     var player = null;
 	
-	for (var i = 0; i<this.players.length; i++){
-		if (client.userid == this.players[i].instance.userid){
-			player = this.players[i];
+	for (var i = 0; i<this.gs.players.length; i++){
+		if (client.userid == this.gs.players[i].instance.userid){
+			player = this.gs.players[i];
 			break;
 		}
 	}
@@ -716,7 +709,7 @@ game_core.prototype.client_handle_input = function(){
         this.input_seq += 1;
 
         //Store the input state as a snapshot of what happened.
-        this.players.self.inputs.push({
+        this.gs.players.self.inputs.push({
             inputs : input,
             time : this.local_time.fixed(3),
             seq : this.input_seq
@@ -743,9 +736,12 @@ game_core.prototype.client_handle_input = function(){
 
 game_core.prototype.client_onserverupdate_recieved = function(data){
         
-	//Store the server time (this is offset by the latency in the network, by the time we get it)
+	// Store the server time (this is offset by the latency in the network, by the time we get it)
 	this.server_time = data.t;
-	//Update our local offset time from the last server update
+	this.local_time = data.t+this.net_latency;
+	// Register certain player as "me"
+	this.me = this.gs.players[data.playerIndex];
+	// 	Update our local offset time from the last server update
 	this.client_time = this.server_time - (this.net_offset/1000);
 	
 	// Load the data into gamestate
@@ -768,21 +764,12 @@ game_core.prototype.client_connect_to_server = function() {
         this.socket.on('disconnect', this.client_ondisconnect.bind(this));
         //Sent each tick of the server simulation. This is our authoritive update
         this.socket.on('onserverupdate', this.client_onserverupdate_recieved.bind(this));
-		//Sent initally to update the whole game state
-        this.socket.on('onserveralldata', this.client_onserveralldata.bind(this));
         //On error we just show that we are not connected for now. Can print the data.
         this.socket.on('error', this.client_ondisconnect.bind(this));
         //On message from the server, we parse the commands and send it to the handlers
         this.socket.on('message', this.client_onnetmessage.bind(this));
 
 }; //game_core.client_connect_to_server
-
-game_core.prototype.client_onserveralldata = function(data){
-	this.local_time = data.t+this.net_latency;
-	this.players = data.players;
-	
-	this.me = this.players[data.playerIndex];
-}
 
 game_core.prototype.client_create_ping_timer = function() {
 
@@ -797,7 +784,6 @@ game_core.prototype.client_create_ping_timer = function() {
     }.bind(this), 1000);
     
 }; //game_core.client_create_ping_timer
-
 
 
 game_core.prototype.client_onping = function(data) {
