@@ -232,11 +232,10 @@ game_state.prototype.client_load_changes = function(data){
 			else if (change.e == 'edit') {
 				for (var prop in change){
 					if (prop != 'e' && prop.substring(0,2) == 'p_') {
-						var p_property = prop.substring(2);
-						if (p_property == 'pos')	 	 this.cells[change.update_id].body['position'] = change[prop];
-						else if (p_property == 'ang') 	 this.cells[change.update_id].body['angle'] = change[prop];
-						else if (p_property == 'vel')	 this.cells[change.update_id].body['velocity'] = change[prop];
-						else if (p_property == 'angvel') this.cells[change.update_id].body['angularVelocity'] = change[prop];
+						if (prop == 'p_pos')	 	 this.cells[change.update_id].body['position'] = change[prop];
+						else if (prop == 'p_ang') 	 this.cells[change.update_id].body['angle'] = change[prop];
+						else if (prop == 'p_vel')	 this.cells[change.update_id].body['velocity'] = change[prop];
+						else if (prop == 'p_angvel') this.cells[change.update_id].body['angularVelocity'] = change[prop];
 					}
 					else if (prop != 'e' ) this.cells[change.update_id][prop] = change[prop];
 				}
