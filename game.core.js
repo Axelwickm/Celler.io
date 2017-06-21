@@ -143,6 +143,7 @@ var game_state = function(gamecore){
 	this.gamecore = gamecore;
 	this.server = gamecore.server;
 	this.client_initial = true;
+	this.deletions = [];
 	
 	this.cells = [];
 	this.players = [];
@@ -160,17 +161,23 @@ game_state.prototype.add = function(obj){
 	}	
 }
 
+game_state.prototype.erase = function(obj){
+	var index = this[obj.type].indexOf(obj);
+	this[obj.type].splice(index, 1);
+	if (this.server){
+		this.deletions.push({type:obj.type, index:index});
+	}
+}
+
 game_state.prototype.edit = function(obj, p, v){
 	obj[p] = v;
-	// 'add' and 'delete' takes priority over 'edit'
+	// 'add' takes priority over 'edit'
 	if (this.server && (obj.update.e.length == 0 || obj.update.e == 'edit')){
 		obj.update.e = 'edit';
 		obj.update.data.push(p);
 	}
 }
 
-
-// TODO: Delete object, update player construction, replace old system
 game_state.prototype.server_get_changes = function(simulation_status, all_data){ 
 	var blacklist = ['update', 'body', 'instance'];
 	var changes = [];
@@ -218,14 +225,23 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 		obj.update.e = '';
 		obj.update.data = [];
 	}
+	var to_send = {
+		c:changes,
+		d:this.deletions
+	}
+	this.deletions = [];
 	// Return in object wrapper
-	return {c:changes}; 
+	return to_send; 
 }
 
 game_state.prototype.client_load_changes = function(data){
-	//console.log(JSON.stringify(data));
+	for (var i = 0; i < data.d.length; i++){
+		var object = data.d[i];
+		this[object.type].splice([object.index], 1);
+	}
+	
 	var player_i = 0;
-	for (var i = 0; i<data.c.length; i++){
+	for (var i = 0; i < data.c.length; i++){
 		var change = data.c[i];
 		if (change.type == 'cells'){
 			if (change.e == 'add' || this.client_initial) this.add(new Cell(this.gamecore, change));
@@ -242,7 +258,7 @@ game_state.prototype.client_load_changes = function(data){
 			}
 		}
 		else if (change.type == 'players'){
-			if (change.e == 'add' || this.client_initial) this.add(new Players(this.gamecore, change));
+			if (change.e == 'add' || this.client_initial) this.add(new Player(this.gamecore, change));
 			else if (change.e == 'edit'){
 				for (var prop in change){
 					if (prop != 'e' ) this.players[change.update_id][prop] = change[prop];
@@ -384,6 +400,9 @@ game_core.prototype.update_physics = function() {
 game_core.prototype.server_update_physics = function() {
 	if (this.server_time>5 && this.gs.cells[0].color != '#00ff00'){
 		this.gs.edit(this.gs.cells[0], 'color','#00ff00');
+		this.gs.erase(this.gs.cells[2]);
+		this.gs.erase(this.gs.cells[2]);
+		this.gs.erase(this.gs.cells[4]);
 	}
 
 		//this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
