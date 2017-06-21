@@ -76,7 +76,6 @@ var game_core = function(game_instance){
 		width : 1000,
 		height : 500
 	};
-	this.me;
 	
 
 	//Set up some physics integration values
@@ -98,7 +97,7 @@ var game_core = function(game_instance){
 
 	//Client specific initialisation
 	if(!this.server) {
-		
+
 		//Create a keyboard handler
 		this.keyboard = new THREEx.KeyboardState();
 
@@ -437,6 +436,7 @@ game_core.prototype.server_new_player = function(client){
 	
 	var gamestate_to_client = this.gs.server_get_changes(true, true);
 	gamestate_to_client.t = this.server_time;
+	gamestate_to_client.playerIndex = this.gs.players.length-1;
 	
 	player.instance.emit('onserverupdate', gamestate_to_client);
 	
@@ -456,12 +456,13 @@ game_core.prototype.server_player_leave = function(client){
 	
 };
 
+game_core.prototype.server_handle_client_inputs = function(client, input){
+	console.log(input);
+};
 
 game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {
-
     //Fetch which client this refers to
     var player = null;
-	
 	for (var i = 0; i<this.gs.players.length; i++){
 		if (client.userid == this.gs.players[i].instance.userid){
 			player = this.gs.players[i];
@@ -471,9 +472,6 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
 	
 	if (!player)
 		console.error('Player with client.userid '+client.userid+', could not be found on server handle input.');
-	
-   //Store the input on the player instance for processing in the physics loop
-   player.inputs.push({inputs:input, time:input_time, seq:input_seq});
 
 };
 
@@ -497,10 +495,7 @@ game_core.prototype.client_click_cell = function(cellID){
 
 
 game_core.prototype.client_update_physics = function() {
-
-        //Fetch the new direction from the input buffer,
-        //and apply it to the state so we can smooth it in the visual state
-
+	
 };
 
 game_core.prototype.client_update = function() {
@@ -706,66 +701,43 @@ game_core.prototype.client_refresh_fps = function() {
 
 game_core.prototype.client_handle_input = function(){
 
-    //if(this.lit > this.local_time) return;
-    //this.lit = this.local_time+0.5; //one second delay
-
-        //This takes input from the client and keeps a record,
-        //It also sends the input information to the server immediately
-        //as it is pressed. It also tags each input with a sequence number.
+	//This takes input from the client and keeps a record,
+	//It also sends the input information to the server immediately
+	//as it is pressed. It also tags each input with a sequence number.
 	
 	if (game.dragging != -1)
 		game.dragging++;
 	
-    var x_dir = 0;
-    var y_dir = 0;
-    var input = [];
-    this.client_has_input = false;
+	if (this.me){
+		//this.me.inputs.push({text:'hej hej!'});
 
-    if(input.length) {
-
-        //Update what sequence we are on now
-        this.input_seq += 1;
-
-        //Store the input state as a snapshot of what happened.
-        this.gs.players.self.inputs.push({
-            inputs : input,
-            time : this.local_time.fixed(3),
-            seq : this.input_seq
-        });
-
-        //Send the packet of information to the server.
-        //The input packets are labelled with an 'i' in front.
-        var server_packet = 'i.';
-            server_packet += input.join('-') + '.';
-            server_packet += this.local_time.toFixed(3).replace('.','-') + '.';
-            server_packet += this.input_seq;
-
-        //Go
-        this.socket.send( server_packet );
-
-    }
-
+		if (this.me.inputs)
+			this.socket.emit('input', this.me.inputs );
+		this.me.inputs = [];
+	}
 };
 
 /* 
 	Client Net Code
 */
 
-
 game_core.prototype.client_onserverupdate_recieved = function(data){
         
 	// Store the server time (this is offset by the latency in the network, by the time we get it)
 	this.server_time = data.t;
 	this.local_time = data.t+this.net_latency;
-	// Register certain player as "me"
-	this.me = this.gs.players[data.playerIndex];
+	
 	// 	Update our local offset time from the last server update
 	this.client_time = this.server_time - (this.net_offset/1000);
 	
 	// Load the data into gamestate
 	this.gs.client_load_changes(data);
 	
-
+	// Register certain player as "me" if a playerIndex is given, which it is on connect
+	if (data.playerIndex != undefined){
+		this.me = this.gs.players[data.playerIndex];
+		this.me.inputs = [];
+	}
 };
 
 

@@ -105,10 +105,12 @@
 		//Now we want to handle some of the messages that clients will send.
 		//They send messages here, and we send them to the game_server to handle.
         client.on('message', function(m) {
-
-            game_server.onMessage(client, m);
-
-        }); //client.on message
+			game_server.onMessage(client, m);
+        });
+		
+		client.on('input', function(inputs) {
+			game_server.onClientInputs(client, inputs);
+		});
 
 		//When this client disconnects, we want to tell the game server
 		//about that as well, so it can remove them from the game they are
