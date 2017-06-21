@@ -61,7 +61,7 @@
             client.send('s.p.' + message_parts[1]);
         }
 
-    }; //game_server.onMessage
+    };
 
     game_server.onInput = function(client, parts) {
             //The input commands come in like u-l,
@@ -77,7 +77,7 @@
             client.game.gamecore.handle_server_input(client, input_commands, input_time, input_seq);
         }
 
-    }; //game_server.onInput
+    };
 
         //Define some required functions
     game_server.createGame = function() {
@@ -111,7 +111,7 @@
         //return it
         return this.game;
 
-    }; //game_server.createGame
+    };
 
         //we are requesting to kill a game in progress.
     game_server.endGame = function(userid) {
@@ -134,15 +134,15 @@
             this.log('The game was not found!');
         }
 
-    }; //game_server.endGame
+    };
 
 	game_server.newPlayer = function(client) {
 		this.game.gamecore.server_new_player(client);
 		this.game.player_count++;
-	} //game_server.newPlayer
+	} 
 	
 	game_server.playerLeave = function(client){
 		this.game.gamecore.server_player_leave(client);
 		this.game.player_count--;
-	} //game_server.playerLeave
+	}
 

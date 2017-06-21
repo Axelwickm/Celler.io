@@ -117,6 +117,5 @@
 			game_server.playerLeave(client);
 
 
-        }); //client.on disconnect
-     
-    }); //sio.sockets.on connection
+        });
+    });

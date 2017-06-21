@@ -43,4 +43,4 @@ window.onload = function(){
 		//Finally, start the loop
 	game.update( new Date().getTime() );
 
-}; //window.onload
+};

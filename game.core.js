@@ -129,7 +129,7 @@ var game_core = function(game_instance){
 		};
 	}
 
-}; //game_core.constructor
+};
 
 //server side we set the 'game_core' class to a global type, so that it can use it anywhere.
 if( 'undefined' != typeof global ) module.exports = global.game_core = game_core;
@@ -367,7 +367,7 @@ game_core.prototype.update = function(t) {
         //schedule the next update
     this.updateid = window.requestAnimationFrame( this.update.bind(this), this.viewport );
 
-}; //game_core.update
+};
 
 
 /*
@@ -385,7 +385,7 @@ game_core.prototype.update_physics = function() {
         this.client_update_physics();
     }
 	
-}; //game_core.prototype.update_physics
+};
 
 /*
 
@@ -406,7 +406,7 @@ game_core.prototype.server_update_physics = function() {
 	}
 
 		//this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
-}; //game_core.server_update_physics
+};
 
 //Makes sure things run smoothly and notifies clients of changes
 //on the server side
@@ -441,7 +441,7 @@ game_core.prototype.server_new_player = function(client){
 	player.instance.emit('onserverupdate', gamestate_to_client);
 	
 	console.log('Player connected - ID: '+player.userid);
-}; //game_core.server_new_player
+};
 
 game_core.prototype.server_player_leave = function(client){
 	var index = null;
@@ -454,7 +454,7 @@ game_core.prototype.server_player_leave = function(client){
 	console.log('Player left - ID: '+this.gs.players[index].userid);
 	this.gs.erase(this.gs.players[index]);
 	
-}; //game_core.server_player_leave
+};
 
 
 game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {
@@ -475,7 +475,7 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
    //Store the input on the player instance for processing in the physics loop
    player.inputs.push({inputs:input, time:input_time, seq:input_seq});
 
-}; //game_core.handle_server_input
+};
 
 
 /*
@@ -501,7 +501,7 @@ game_core.prototype.client_update_physics = function() {
         //Fetch the new direction from the input buffer,
         //and apply it to the state so we can smooth it in the visual state
 
-}; //game_core.client_update_physics
+};
 
 game_core.prototype.client_update = function() {
     //Clear the screen area
@@ -521,7 +521,7 @@ game_core.prototype.client_update = function() {
     //Work out the fps average
     this.client_refresh_fps();
 
-}; //game_core.update_client
+};
 
 game_core.prototype.create_timer = function(){
     setInterval(function(){
@@ -557,7 +557,7 @@ game_core.prototype.create_physics_simulation = function() {
         this.update_physics();	
     }.bind(this), physics_frame);
 
-}; //game_core.client_create_physics_simulation
+};
 
 
 game_core.prototype.create_camera = function() {
@@ -628,7 +628,7 @@ game_core.prototype.create_camera = function() {
 	this.viewport.addEventListener("mousewheel", scrollHandler, false);    // IE9, Chrome, Safari, Opera
 	this.viewport.addEventListener("DOMMouseScroll", scrollHandler, false);// Firefox
 	this.viewport.addEventListener("onmousewheel", scrollHandler, false);  // IE 6/7/8
-}
+};
 
 
 game_core.prototype.client_create_configuration = function() {
@@ -660,7 +660,7 @@ game_core.prototype.client_create_configuration = function() {
 	this.oldMouse = {x:0, y:0}
 	this.dragging = -1;
 
-};//game_core.client_create_configuration
+};
 
 game_core.prototype.client_create_debug_gui = function() {
 
@@ -683,7 +683,7 @@ game_core.prototype.client_create_debug_gui = function() {
 
         _consettings.open();
 
-}; //game_core.client_create_debug_gui
+};
 
 game_core.prototype.client_refresh_fps = function() {
 
@@ -701,7 +701,7 @@ game_core.prototype.client_refresh_fps = function() {
 
     } //reached 10 frames
 
-}; //game_core.client_refresh_fps
+};
 
 
 game_core.prototype.client_handle_input = function(){
@@ -745,7 +745,7 @@ game_core.prototype.client_handle_input = function(){
 
     }
 
-}; //game_core.client_handle_input
+};
 
 /* 
 	Client Net Code
@@ -766,7 +766,7 @@ game_core.prototype.client_onserverupdate_recieved = function(data){
 	this.gs.client_load_changes(data);
 	
 
-}; //game_core.client_onserverupdate_recieved
+};
 
 
 game_core.prototype.client_connect_to_server = function() {
@@ -787,7 +787,7 @@ game_core.prototype.client_connect_to_server = function() {
         //On message from the server, we parse the commands and send it to the handlers
         this.socket.on('message', this.client_onnetmessage.bind(this));
 
-}; //game_core.client_connect_to_server
+};
 
 game_core.prototype.client_create_ping_timer = function() {
 
@@ -801,7 +801,7 @@ game_core.prototype.client_create_ping_timer = function() {
 
     }.bind(this), 1000);
     
-}; //game_core.client_create_ping_timer
+};
 
 
 game_core.prototype.client_onping = function(data) {
@@ -809,7 +809,7 @@ game_core.prototype.client_onping = function(data) {
     this.net_ping = new Date().getTime() - parseFloat( data );
     this.net_latency = this.net_ping/2;
 
-}; //client_onping
+};
 
 game_core.prototype.client_onnetmessage = function(data) {
 
@@ -835,13 +835,8 @@ game_core.prototype.client_onnetmessage = function(data) {
         break; //'s'
     } //command
                 
-}; //client_onnetmessage
+};
 
 game_core.prototype.client_ondisconnect = function(data) {
 	console.log('Server disconnect');
-}; //client_ondisconnect
-
-/* 
-	Server Net Code
-*/
-
+};
