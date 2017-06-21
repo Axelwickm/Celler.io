@@ -456,8 +456,16 @@ game_core.prototype.server_player_leave = function(client){
 	
 };
 
-game_core.prototype.server_handle_client_inputs = function(client, input){
-	console.log(input);
+game_core.prototype.server_handle_client_inputs = function(client, inputs){
+	for (var i in inputs){
+		var action = inputs[i].action;
+		if (action == 'click cell'){
+			if (this.gs.cells[inputs[i].cellID].color == '#ff0000')
+				this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#0000ff');
+			else
+				this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#ff0000');
+		}
+	}
 };
 
 game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {
@@ -486,12 +494,16 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
 */
 
 game_core.prototype.client_click_cell = function(cellID){
+	this.me.inputs.push({
+		action:'click cell',
+		cellID:cellID
+	});
 	
 	if (this.gs.cells[cellID].color == '#ff0000')
 		this.gs.cells[cellID].color = '#00ff66';
 	else
 		this.gs.cells[cellID].color = '#ff0000';
-}
+};
 
 
 game_core.prototype.client_update_physics = function() {
@@ -709,8 +721,6 @@ game_core.prototype.client_handle_input = function(){
 		game.dragging++;
 	
 	if (this.me){
-		//this.me.inputs.push({text:'hej hej!'});
-
 		if (this.me.inputs)
 			this.socket.emit('input', this.me.inputs );
 		this.me.inputs = [];
