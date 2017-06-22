@@ -126,6 +126,14 @@ var game_core = function(game_instance){
 		for (var i = 0; i<100; i++){
 			this.gs.add(new Cell(this, {p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],p_vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
 		};
+		
+		console.log('\nChemistry tests:');
+		console.log(this.gs.cells[0].matter);
+		Matter.react(this.gs.cells[0].matter);
+		console.log(this.gs.cells[0].matter);
+		console.log(Matter.iform_to_text(this.gs.cells[0].matter[0].iform));
+		console.log(this.gs.cells[0].matter);
+		console.log('Chemistry tests over.\n')
 	}
 
 };
@@ -282,8 +290,9 @@ var Player = function(client){
 	Gameplay classes
 */
 
-var Matter = {}
 
+/* Static Matter class which does all the chemistry */
+var Matter = {}
 // Representative letters for elements
 Matter.E_letters    = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','ϕ','χ','ψ','ω'],
 // Number of possible bonds for elements
