@@ -282,13 +282,29 @@ var Player = function(client){
 	Gameplay classes
 */
 
-var Matter = function(){
-	// Representative letters for elements
-	this.E_letters =    ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','ϕ','χ','ψ','ω'],
-	// Number of possible bonds for elements
-	this.E_bonds =      [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
-	// How much energy is stored in the bonds of elements
-	this.E_bondEnergy = [ 12, 11, 10, 9 , 8 , 7 , 6 , 5 , 4 , 3 , 2 , 1 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]
+var Matter = {}
+
+// Representative letters for elements
+Matter.E_letters    = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','ϕ','χ','ψ','ω'],
+// Number of possible bonds for elements
+Matter.E_bonds      = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
+// How much energy is stored in the bonds of elements
+Matter.E_bondEnergy = [ 12, 11, 10, 9 , 8 , 7 , 6 , 5 , 4 , 3 , 2 , 1 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]
+
+Matter.react = function(matter){
+	matter = [{i_form:'10', c:2}];
+	return matter;
+}
+
+Matter.iform_to_text = function(iform){
+	var tform = '';
+	for (var c in iform){
+		if (c%2 == 1)
+			tform = tform.concat( this.E_letters[iform[c]] );
+		else
+			tform = tform.concat( (c == 0 ?'':'_') + iform[c]);
+	}
+	return tform;
 }
 
 
@@ -309,6 +325,8 @@ var Cell = function(gamecore, options){
 	this.body.addShape(circleShape);
 	
 	gamecore.physics.addBody(this.body);
+	
+	this.matter = [{iform:'10', c:1}]; // i_form: 1 of index 0 ( α )
 }
 
 
