@@ -282,6 +282,15 @@ var Player = function(client){
 	Gameplay classes
 */
 
+var Matter = {
+	// Representative letters for elements
+	this.E_letters =  ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','ϕ','χ','ψ','ω'],
+	// Number of possible bonds for elements
+	this.E_bonds =    [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
+	// How much energy is stored in the bonds of elements
+	this.E_bondEnergy = [ 12, 11, 10, 9 , 8 , 7 , 6 , 5 , 4 , 3 , 2 , 1 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]
+}
+
 
 var Cell = function(gamecore, options){
 	this.type = options.type || 'cells';
