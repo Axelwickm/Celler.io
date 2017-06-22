@@ -129,9 +129,9 @@ var game_core = function(game_instance){
 		
 		console.log('\nChemistry tests:');
 		console.log(this.gs.cells[0].matter);
-		Matter.react(this.gs.cells[0].matter);
+		this.gs.cells[0].matter = Matter.react(this.gs.cells[0].matter);
 		console.log(this.gs.cells[0].matter);
-		console.log(Matter.iform_to_text(this.gs.cells[0].matter[0].iform));
+		console.log(Matter.iform_to_text(Object.keys(this.gs.cells[0].matter)[0]));
 		console.log(this.gs.cells[0].matter);
 		console.log('Chemistry tests over.\n')
 	}
@@ -301,7 +301,7 @@ Matter.E_bonds      = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 
 Matter.E_bondEnergy = [ 12, 11, 10, 9 , 8 , 7 , 6 , 5 , 4 , 3 , 2 , 1 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]
 
 Matter.react = function(matter){
-	matter = [{i_form:'10', c:2}];
+	matter = {'10':2};
 	return matter;
 }
 
@@ -311,7 +311,7 @@ Matter.iform_to_text = function(iform){
 		if (c%2 == 1)
 			tform = tform.concat( this.E_letters[iform[c]] );
 		else
-			tform = tform.concat( (c == 0 ?'':'_') + iform[c]);
+			tform = tform.concat( (c == 0 ? '':'_' ) + iform[c]);
 	}
 	return tform;
 }
@@ -335,7 +335,7 @@ var Cell = function(gamecore, options){
 	
 	gamecore.physics.addBody(this.body);
 	
-	this.matter = [{iform:'10', c:1}]; // i_form: 1 of index 0 ( α )
+	this.matter = {'10':1}; // iform 1 of index 0 ( α ) : count 1
 }
 
 
