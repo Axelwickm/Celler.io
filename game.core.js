@@ -129,9 +129,8 @@ var game_core = function(game_instance){
 		
 		console.log('\nChemistry tests:');
 		console.log(this.gs.cells[0].matter);
-		this.gs.cells[0].matter = Matter.react(this.gs.cells[0].matter);
-		console.log(this.gs.cells[0].matter);
-		console.log(Matter.iform_to_text(Object.keys(this.gs.cells[0].matter)[0]));
+		this.gs.cells[0].matter = Matter.add(this.gs.cells[0].matter, {iform:'12', count:5});
+		console.log('\n');
 		console.log(this.gs.cells[0].matter);
 		console.log('Chemistry tests over.\n')
 	}
@@ -294,15 +293,66 @@ var Player = function(client){
 /* Static Matter class which does all the chemistry */
 var Matter = {}
 // Representative letters for elements
-Matter.E_letters    = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','ϕ','χ','ψ','ω'],
+Matter.E_letters      = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','ϕ','χ','ψ','ω'],
 // Number of possible bonds for elements
-Matter.E_bonds      = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
+Matter.E_bonds        = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
 // How much energy is stored in the bonds of elements (enthalpy)
-Matter.E_bondEnergy = [ 12, 11, 10, 9 , 8 , 7 , 6 , 5 , 4 , 3 , 2 , 1 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]
+Matter.E_bondEnthalpy = [ 12, 11, 10, 9 , 8 , 7 , 6 , 5 , 4 , 3 , 2 , 1 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]
 
-Matter.react = function(matter){
+Matter.add = function(matter, newCompound){
+	// Find which existing compounds this new compund is the most reactive with
+	var reactions = [];
+	for (var i = 0; i < matter.length; i++){
+		reactions.push(Matter.react(matter[i], newCompound));
+	}
+	
+	// Sorts list depending on gibbs free energy
+	reactions.sort(function(a,b){return b.g < a.g});
+	
+	// Add the new compound to the matter, it may get deleted later in the function if it reacts into another compound
+	matter.push(newCompound);
+	
+	// Apply the reactions if gibbs free energy is negative, which means it's spontaneous
+	var newCompounds = [];
+	for (var i = 0; i<reactions.length; i++){
+		if (reactions[i].g < 0 && 0 < newCompound.count){
+			// Calculate how many of the reactions are possible before one of the reactans run out
+			var reactionCount = Math.floor(Math.min(reactions[i].a.count/reactions[i].aC, reactions[i].b.count/reactions[i].bC));
+			for (var j = 0; j<reactions[i].products.length; j++){
+				var p = reactions[i].products[j];
+				var newCount = matter.findIndex(function(e){
+					return e.iform == p.iform;
+				});
+				if (newCount == -1){
+					newCompounds.push(p);
+				}
+				else {
+					console.log(p.iform+' '+p.count);
+					matter[newCount].count = p.count;
+					if (p.count == 0) matter.splice(newCount, 0);
+				}
+			}
+		}
+		else break;
+	}
+	// Add and react the new compounds
+	for (var i = 0; i<newCompounds.length; i++){
+		matter = Matter.add(matter, newCompounds[i]);
+	}
+	
 	
 	return matter;
+}
+
+Matter.react = function(a, b){
+	console.log('ddd '+a.iform+' '+b.iform+' '+b.count);
+	return {
+		a:a, b:b,
+		aC:1, bC:1,
+		products : [],
+		produced : [],
+		g : a.count-2.5 // = Δh - T * Δs
+	};
 }
 
 Matter.iform_to_text = function(iform){
@@ -335,7 +385,7 @@ var Cell = function(gamecore, options){
 	
 	gamecore.physics.addBody(this.body);
 	
-	this.matter = {'10':1}; // iform 1 of index 0 ( α ) : count 1
+	this.matter = [{iform:'10', count:3}, {iform:'25', count:2}]; // iform 1 of index 0 ( α ), count 3
 }
 
 
