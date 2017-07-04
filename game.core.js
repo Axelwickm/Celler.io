@@ -129,7 +129,7 @@ var game_core = function(game_instance){
 		
 		console.log('\nChemistry tests:');
 		console.log(this.gs.cells[0].matter);
-		this.gs.cells[0].matter = Matter.add(this.gs.cells[0].matter, {iform:'1,2', count:5});
+		this.gs.cells[0].matter = Matter.add(this.gs.cells[0].matter, Matter.create('2,2',5));
 		console.log('\n');
 		console.log(this.gs.cells[0].matter);
 		console.log('Chemistry tests over.\n')
@@ -358,15 +358,17 @@ Matter.add = function(matter, newCompound){
 Matter.react = function(a, b){
 	var products = [];
 	console.log(a.iform+'   '+b.iform);
+	
+	
 	var aC = 1, bC = 1;
 	var reactionCount = Math.floor( Math.min(a.count/aC, b.count/bC) );
 	if (a.iform == '2,5' && b.iform == '1,2'){
 		a.count -= aC*reactionCount; b.count -= bC*reactionCount;
-		products.push({iform:'5,4', count:1*reactionCount});
+		products.push(Matter.create('5,4', 1*reactionCount));
 	}
 	else if (a.iform == '1,0' && b.iform == '1,2'){
 		a.count -= aC*reactionCount; b.count -= bC*reactionCount;
-		products.push({iform:'8,4', count:1*reactionCount});
+		products.push(Matter.create('8,4', 1*reactionCount));
 	}
 
 	return {
@@ -375,16 +377,35 @@ Matter.react = function(a, b){
 }
 
 Matter.gibbs_free_energy = function(a, b){
+	
 	var g = 1;
-	if (a.iform == '2,5' && b.iform == '1,2')
+	/*if (a.iform == '2,5' && b.iform == '1,2')
 		g = -1;
 	else  if (a.iform == '1,0' && b.iform == '1,2')
-		g = -0.5;
+		g = -0.5;*/
 	
 	return {
 		a:a, b:b,
 		g : g // = Δh - T * Δs
 	};
+}
+
+Matter.create = function(iform, count){
+	var iformarray = iform.split(',');
+
+	var free_bonds = 0;
+	var enthalpy = 0;
+	for (var i = 0; i < iformarray.length ; i+=2){
+		free_bonds += Matter.E_bonds[iformarray[i+1]]*iformarray[i];
+		enthalpy += Matter.E_bondEnthalpy[iformarray[i+1]]*iformarray[i];
+	}
+	
+	return {
+		iform:iform,
+		count:count,
+		free_bonds:free_bonds,
+		enthalpy:enthalpy
+	}
 }
 
 Matter.iform_to_text = function(iform){
@@ -418,7 +439,7 @@ var Cell = function(gamecore, options){
 	
 	gamecore.physics.addBody(this.body);
 	
-	this.matter = [{iform:'1,0', count:3}, {iform:'2,5', count:2}]; // iform 1 of index 0 ( α ), count 3
+	this.matter = [Matter.create('1,0,5,7', 2), Matter.create('2,5,6,20', 6)]; // iform 1 of index 0 ( α )
 }
 
 
