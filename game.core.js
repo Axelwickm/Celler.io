@@ -129,7 +129,7 @@ var game_core = function(game_instance){
 		
 		console.log('\nChemistry tests:');
 		console.log(this.gs.cells[0].matter);
-		this.gs.cells[0].matter = Matter.add(this.gs.cells[0].matter, {iform:'12', count:5});
+		this.gs.cells[0].matter = Matter.add(this.gs.cells[0].matter, {iform:'1,2', count:5});
 		console.log('\n');
 		console.log(this.gs.cells[0].matter);
 		console.log('Chemistry tests over.\n')
@@ -347,7 +347,7 @@ Matter.add = function(matter, newCompound){
 	
 	// Add and react the new compounds
 	for (var i = 0; i<newCompounds.length; i++){
-		console.log('Add product '+newCompounds[i].iform+' '+newCompounds[i].count);
+		console.log('Add product '+Matter.iform_to_text(newCompounds[i].iform)+' '+newCompounds[i].count);
 		matter = Matter.add(matter, newCompounds[i]);
 	}
 	
@@ -360,13 +360,13 @@ Matter.react = function(a, b){
 	console.log(a.iform+'   '+b.iform);
 	var aC = 1, bC = 1;
 	var reactionCount = Math.floor( Math.min(a.count/aC, b.count/bC) );
-	if (a.iform == '25' && b.iform == '12'){
+	if (a.iform == '2,5' && b.iform == '1,2'){
 		a.count -= aC*reactionCount; b.count -= bC*reactionCount;
-		products.push({iform:'54', count:1*reactionCount});
+		products.push({iform:'5,4', count:1*reactionCount});
 	}
-	else if (a.iform == '10' && b.iform == '12'){
+	else if (a.iform == '1,0' && b.iform == '1,2'){
 		a.count -= aC*reactionCount; b.count -= bC*reactionCount;
-		products.push({iform:'84', count:1*reactionCount});
+		products.push({iform:'8,4', count:1*reactionCount});
 	}
 
 	return {
@@ -376,9 +376,9 @@ Matter.react = function(a, b){
 
 Matter.gibbs_free_energy = function(a, b){
 	var g = 1;
-	if (a.iform == '25' && b.iform == '12')
+	if (a.iform == '2,5' && b.iform == '1,2')
 		g = -1;
-	else  if (a.iform == '10' && b.iform == '12')
+	else  if (a.iform == '1,0' && b.iform == '1,2')
 		g = -0.5;
 	
 	return {
@@ -389,11 +389,12 @@ Matter.gibbs_free_energy = function(a, b){
 
 Matter.iform_to_text = function(iform){
 	var tform = '';
-	for (var c in iform){
+	var iformarray = iform.split(',');
+	for (var c in iformarray){
 		if (c%2 == 1)
-			tform = tform.concat( this.E_letters[iform[c]] );
+			tform = tform.concat( this.E_letters[iformarray[c]] );
 		else
-			tform = tform.concat( (c == 0 ? '':'_' ) + iform[c]);
+			tform = tform.concat( (c == 0 ? '':'_' ) + iformarray[c]);
 	}
 	return tform;
 }
@@ -417,7 +418,7 @@ var Cell = function(gamecore, options){
 	
 	gamecore.physics.addBody(this.body);
 	
-	this.matter = [{iform:'10', count:3}, {iform:'25', count:2}]; // iform 1 of index 0 ( α ), count 3
+	this.matter = [{iform:'1,0', count:3}, {iform:'2,5', count:2}]; // iform 1 of index 0 ( α ), count 3
 }
 
 
