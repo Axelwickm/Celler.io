@@ -303,40 +303,51 @@ Matter.add = function(matter, newCompound){
 	// Find which existing compounds this new compund is the most reactive with
 	var reactions = [];
 	for (var i = 0; i < matter.length; i++){
-		reactions.push(Matter.react(matter[i], newCompound));
+		reactions.push(Matter.gibbs_free_energy(matter[i], newCompound));
 	}
 	
-	// Sorts list depending on gibbs free energy
+	// Sorts list depending on gibbs free energy, which makes the compound react with the most reactive compund first
 	reactions.sort(function(a,b){return b.g < a.g});
-	
-	// Add the new compound to the matter, it may get deleted later in the function if it reacts into another compound
-	matter.push(newCompound);
 	
 	// Apply the reactions if gibbs free energy is negative, which means it's spontaneous
 	var newCompounds = [];
 	for (var i = 0; i<reactions.length; i++){
 		if (reactions[i].g < 0 && 0 < newCompound.count){
-			// Calculate how many of the reactions are possible before one of the reactans run out
-			var reactionCount = Math.floor(Math.min(reactions[i].a.count/reactions[i].aC, reactions[i].b.count/reactions[i].bC));
-			for (var j = 0; j<reactions[i].products.length; j++){
-				var p = reactions[i].products[j];
-				var newCount = matter.findIndex(function(e){
-					return e.iform == p.iform;
-				});
-				if (newCount == -1){
-					newCompounds.push(p);
-				}
-				else {
-					console.log(p.iform+' '+p.count);
-					matter[newCount].count = p.count;
-					if (p.count == 0) matter.splice(newCount, 0);
-				}
+			// React the compunds, which decreases their count, while returning a list of the new formed compunds
+			newCompounds = newCompounds.concat(Matter.react(reactions[i].a, reactions[i].b).products);
+			
+			// Delete a or b if they have been depleted
+			if (reactions[i].a.count == 0 && reactions[i].a != newCompound) {
+				var index = matter.indexOf(reactions[i].a);
+				if (index != -1) matter.splice(index, 1);
+				console.log('Splice a:');
+				console.log(reactions[i].a);
 			}
+			if (reactions[i].b.count == 0 && reactions[i].b != newCompound) {
+				var index = matter.indexOf(reactions[i].b);
+				if (index != -1) matter.splice(index, 1);
+				console.log('Splice b:');
+				console.log(reactions[i].b);
+			}
+			
 		}
 		else break;
 	}
+	
+	// Push the new compund if not all of it has been consumed
+	if (newCompound.count != 0) {
+		var index = matter.findIndex(function(e){
+			return e.iform == newCompound.iform;
+		});
+		if (index == -1)
+			matter.push(newCompound);
+		else 
+			matter[index].count += newCompound.count;
+	}
+	
 	// Add and react the new compounds
 	for (var i = 0; i<newCompounds.length; i++){
+		console.log('Add product '+newCompounds[i].iform+' '+newCompounds[i].count);
 		matter = Matter.add(matter, newCompounds[i]);
 	}
 	
@@ -345,13 +356,34 @@ Matter.add = function(matter, newCompound){
 }
 
 Matter.react = function(a, b){
-	console.log('ddd '+a.iform+' '+b.iform+' '+b.count);
+	var products = [];
+	console.log(a.iform+'   '+b.iform);
+	var aC = 1, bC = 1;
+	var reactionCount = Math.floor( Math.min(a.count/aC, b.count/bC) );
+	if (a.iform == '25' && b.iform == '12'){
+		a.count -= aC*reactionCount; b.count -= bC*reactionCount;
+		products.push({iform:'54', count:1*reactionCount});
+	}
+	else if (a.iform == '10' && b.iform == '12'){
+		a.count -= aC*reactionCount; b.count -= bC*reactionCount;
+		products.push({iform:'84', count:1*reactionCount});
+	}
+
+	return {
+		products : products
+	};
+}
+
+Matter.gibbs_free_energy = function(a, b){
+	var g = 1;
+	if (a.iform == '25' && b.iform == '12')
+		g = -1;
+	else  if (a.iform == '10' && b.iform == '12')
+		g = -0.5;
+	
 	return {
 		a:a, b:b,
-		aC:1, bC:1,
-		products : [],
-		produced : [],
-		g : a.count-2.5 // = Δh - T * Δs
+		g : g // = Δh - T * Δs
 	};
 }
 
