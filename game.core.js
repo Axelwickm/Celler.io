@@ -395,7 +395,7 @@ game_core.prototype.update_physics = function() {
 
 */
 
-//Updated at 15ms , simulates the world state
+    //Updated at 15ms , simulates the world state
 game_core.prototype.server_update_physics = function() {
 	if (this.server_time>5 && this.gs.cells[0].color != '#00ff00'){
 		this.gs.edit(this.gs.cells[0], 'color','#00ff00');
