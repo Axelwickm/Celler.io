@@ -126,11 +126,13 @@ var game_core = function(game_instance){
 		for (var i = 0; i<100; i++){
 			this.gs.add(new Cell(this, {p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],p_vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
 		};
-		
-		console.log('\nChemistry tests:');
 		console.log(this.gs.cells[0].matter);
+		var temperature = 5;
+		console.log('\nChemistry tests:');
 		for (var i = 0; i < 5; i++){
-			this.gs.cells[0].matter = Matter.random_reaction(this.gs.cells[0].matter);
+			var r = Matter.random_reaction(this.gs.cells[0].matter, temperature);
+			this.gs.cells[0].matter = r.matter;
+			temperature = r.temperature;
 			console.log('\nReaction '+i);
 			console.log(this.gs.cells[0].matter);
 		}
@@ -315,14 +317,20 @@ Matter.add = function(matter, newCompound){
 	return matter;
 }
 
-Matter.random_reaction = function(matter){
+Matter.random_reaction = function(matter, temperature){
 	// React the compunds, which decreases their count, while returning a list of the new formed compunds
 	var a = matter[Math.floor(Math.random()*matter.length)];
 	var b = matter[Math.floor(Math.random()*matter.length)];
+	
 	// Exit if same compunds were selected
 	if (a != b){
-		console.log(Matter.react(a, b));
-		return matter;
+		var reaction = Matter.react(a, b, temperature);
+		console.log(reaction);
+		temperature = reaction.temperature;
+		return {
+			matter:matter,
+			temperature: temperature
+		};
 		
 		// Delete a or b if they have been depleted
 		if (reactions[i].a.count == 0 && reactions[i].a != newCompound) {
@@ -339,10 +347,13 @@ Matter.random_reaction = function(matter){
 		}
 	}
 	
-	return matter;
+	return {
+		matter : matter,
+		temperature : temperature
+	};
 }
 
-Matter.react = function(a, b){
+Matter.react = function(a, b, temperature){
 	var products = [];
 	var changes = Math.floor(Math.random() * a.iform.length / 4);
 	
@@ -357,13 +368,16 @@ Matter.react = function(a, b){
 	
 	var newA = Matter.create(a.iform, a.count);
 	var newB = Matter.create(b.iform, b.count);
+	console.log('temperature: '+temperature);
+	temperature += 1;
 	
 	var aC = 1, bC = 1;
 	var reactionCount = Math.floor( Math.min(a.count/aC, b.count/bC) );
 	
 
 	return {
-		products : products
+		products : products,
+		temperature : temperature
 	};
 }
 
