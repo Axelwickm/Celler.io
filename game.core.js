@@ -129,9 +129,11 @@ var game_core = function(game_instance){
 		
 		console.log('\nChemistry tests:');
 		console.log(this.gs.cells[0].matter);
-		this.gs.cells[0].matter = Matter.add(this.gs.cells[0].matter, Matter.create('2,2',5));
-		console.log('\n');
-		console.log(this.gs.cells[0].matter);
+		for (var i = 0; i < 5; i++){
+			this.gs.cells[0].matter = Matter.random_reaction(this.gs.cells[0].matter);
+			console.log('\nReaction '+i);
+			console.log(this.gs.cells[0].matter);
+		}
 		console.log('Chemistry tests over.\n')
 	}
 
@@ -300,40 +302,6 @@ Matter.E_bonds        = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 
 Matter.E_bondEnthalpy = [ 12, 11, 10, 9 , 8 , 7 , 6 , 5 , 4 , 3 , 2 , 1 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]
 
 Matter.add = function(matter, newCompound){
-	// Find which existing compounds this new compund is the most reactive with
-	var reactions = [];
-	for (var i = 0; i < matter.length; i++){
-		reactions.push(Matter.gibbs_free_energy(matter[i], newCompound));
-	}
-	
-	// Sorts list depending on gibbs free energy, which makes the compound react with the most reactive compund first
-	reactions.sort(function(a,b){return b.g < a.g});
-	
-	// Apply the reactions if gibbs free energy is negative, which means it's spontaneous
-	var newCompounds = [];
-	for (var i = 0; i<reactions.length; i++){
-		if (reactions[i].g < 0 && 0 < newCompound.count){
-			// React the compunds, which decreases their count, while returning a list of the new formed compunds
-			newCompounds = newCompounds.concat(Matter.react(reactions[i].a, reactions[i].b).products);
-			
-			// Delete a or b if they have been depleted
-			if (reactions[i].a.count == 0 && reactions[i].a != newCompound) {
-				var index = matter.indexOf(reactions[i].a);
-				if (index != -1) matter.splice(index, 1);
-				console.log('Splice a:');
-				console.log(reactions[i].a);
-			}
-			if (reactions[i].b.count == 0 && reactions[i].b != newCompound) {
-				var index = matter.indexOf(reactions[i].b);
-				if (index != -1) matter.splice(index, 1);
-				console.log('Splice b:');
-				console.log(reactions[i].b);
-			}
-			
-		}
-		else break;
-	}
-	
 	// Push the new compund if not all of it has been consumed
 	if (newCompound.count != 0) {
 		var index = matter.findIndex(function(e){
@@ -343,50 +311,59 @@ Matter.add = function(matter, newCompound){
 			matter.push(newCompound);
 		else 
 			matter[index].count += newCompound.count;
+	}	
+	return matter;
+}
+
+Matter.random_reaction = function(matter){
+	// React the compunds, which decreases their count, while returning a list of the new formed compunds
+	var a = matter[Math.floor(Math.random()*matter.length)];
+	var b = matter[Math.floor(Math.random()*matter.length)];
+	// Exit if same compunds were selected
+	if (a != b){
+		console.log(Matter.react(a, b));
+		return matter;
+		
+		// Delete a or b if they have been depleted
+		if (reactions[i].a.count == 0 && reactions[i].a != newCompound) {
+			var index = matter.indexOf(reactions[i].a);
+			if (index != -1) matter.splice(index, 1);
+			console.log('Splice a:');
+			console.log(reactions[i].a);
+		}
+		if (reactions[i].b.count == 0 && reactions[i].b != newCompound) {
+			var index = matter.indexOf(reactions[i].b);
+			if (index != -1) matter.splice(index, 1);
+			console.log('Splice b:');
+			console.log(reactions[i].b);
+		}
 	}
-	
-	// Add and react the new compounds
-	for (var i = 0; i<newCompounds.length; i++){
-		console.log('Add product '+Matter.iform_to_text(newCompounds[i].iform)+' '+newCompounds[i].count);
-		matter = Matter.add(matter, newCompounds[i]);
-	}
-	
 	
 	return matter;
 }
 
 Matter.react = function(a, b){
 	var products = [];
-	console.log(a.iform+'   '+b.iform);
+	var changes = Math.floor(Math.random() * a.iform.length / 4);
 	
+	for (var i = 0; i<changes; i++){
+		// Move set from a.iform to b.iform
+		var iformarray = a.iform.split(',');
+		var n = Math.floor( Math.random() * iformarray.length/2) * 2;
+		b.iform = b.iform.concat(','+iformarray[n]+','+iformarray[n+1]);
+		iformarray.splice(n, 2);
+		a.iform = iformarray.join();
+	}
+	
+	var newA = Matter.create(a.iform, a.count);
+	var newB = Matter.create(b.iform, b.count);
 	
 	var aC = 1, bC = 1;
 	var reactionCount = Math.floor( Math.min(a.count/aC, b.count/bC) );
-	if (a.iform == '2,5' && b.iform == '1,2'){
-		a.count -= aC*reactionCount; b.count -= bC*reactionCount;
-		products.push(Matter.create('5,4', 1*reactionCount));
-	}
-	else if (a.iform == '1,0' && b.iform == '1,2'){
-		a.count -= aC*reactionCount; b.count -= bC*reactionCount;
-		products.push(Matter.create('8,4', 1*reactionCount));
-	}
+	
 
 	return {
 		products : products
-	};
-}
-
-Matter.gibbs_free_energy = function(a, b){
-	
-	var g = 1;
-	/*if (a.iform == '2,5' && b.iform == '1,2')
-		g = -1;
-	else  if (a.iform == '1,0' && b.iform == '1,2')
-		g = -0.5;*/
-	
-	return {
-		a:a, b:b,
-		g : g // = Δh - T * Δs
 	};
 }
 
