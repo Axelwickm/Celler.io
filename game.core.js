@@ -381,8 +381,17 @@ Matter.react = function(a, b, temperature){
 	if (deltaG < 0){
 		temperature += deltaH * (newA.mass + newB.mass);
 		
-		var aC = 1, bC = 1;
-		var reactionCount = Math.floor( Math.min(a.count/aC, b.count/bC) );
+		// TODO: find most limited reactant
+		// This determines reaction rate
+		var reactionCount = Math.floor( Math.min(a.count, b.count) );
+		reactionCount = 1;
+		
+		a.count -= reactionCount;
+		b.count -= reactionCount;
+		newA.count = reactionCount;
+		newB.count = reactionCount;
+		products.push(newA);
+		products.push(newB);
 		
 	}
 	
