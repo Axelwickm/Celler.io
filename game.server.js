@@ -12,31 +12,31 @@
     var
         game_server = module.exports = { game : null },
         UUID        = require('node-uuid'),
-		PythonShell = require('python-shell'),
+        PythonShell = require('python-shell'),
         verbose     = true;
 
-	//Since we are sharing code with the browser, we
-	//are going to include some values to handle that.
+    //Since we are sharing code with the browser, we
+    //are going to include some values to handle that.
     global.window = global.document = global;
 
     //Import shared game library code.
     require('./game.core.js');
-	
-	// Getting the python server script
-	game_server.python_process = new PythonShell('./game.py',{mode:'json'});
-	console.log('Python process started');
-	
-	// Logging all prints in python file
-	game_server.python_process.on('message', function (message) {
-		if (message.event == 'print')
-			console.log('Python process: '+message.data);
-		else if (message.event == 'ongameupdate')
-			console.log('Python process gameupdate recieved');
-	});
-	game_server.python_process.on('error', function (err) {
-		if(err) throw err;
-	});
-	
+    
+    // Getting the python server script
+    game_server.python_process = new PythonShell('./game.py',{mode:'json'});
+    console.log('Python process started');
+    
+    // Logging all prints in python file
+    game_server.python_process.on('message', function (message) {
+        if (message.event == 'print')
+            console.log('Python process: '+message.data);
+        else if (message.event == 'ongameupdate')
+            console.log('Python process gameupdate recieved');
+    });
+    game_server.python_process.on('error', function (err) {
+        if(err) throw err;
+    });
+    
     game_server.local_time = 0;
     game_server._dt = new Date().getTime();
     game_server._dte = new Date().getTime();
@@ -62,18 +62,18 @@
         }
 
     };
-	
+    
 
     game_server.onInput = function(client, parts) {
-		//The input commands come in like u-l,
-		//so we split them up into separate commands,
-		//and then update the players
+        //The input commands come in like u-l,
+        //so we split them up into separate commands,
+        //and then update the players
         var input_commands = parts[1].split('-');
         var input_time = parts[2].replace('-','.');
         var input_seq = parts[3];
 
-		//the client should be in a game, so
-		//we can tell that game to handle the input
+        //the client should be in a game, so
+        //we can tell that game to handle the input
         if(client && client.game && client.game.gamecore) {
             client.game.gamecore.handle_server_input(client, input_commands, input_time, input_seq);
         }
@@ -82,14 +82,14 @@
 
     //Define some required functions
     game_server.createGame = function() {
-		console.log('Creating game.');
+        console.log('Creating game.');
 
          //Create new game
         this.game = {};
-			
-		this.game.player_count = 0;
-		
-		//Create a new game core instance, this actually runs the
+            
+        this.game.player_count = 0;
+        
+        //Create a new game core instance, this actually runs the
         //game code like collisions and such.
         this.game.gamecore = new game_core( this.game );
         //Start updating the game loop on the server
@@ -97,7 +97,7 @@
  
         //set this flag, so that the update loop can run it.
         this.game.active = true;
-		
+        
         //return it
         return this.game;
 
@@ -109,16 +109,16 @@
         if(this.game) {
             //stop the game updates
             this.game.gamecore.stop_update();
-			
-			for (var i = 0; i<this.game.gamecore.players.length; i++){
-				this.game.gamecore.players[i].send('s.e');
-			}
-			
-			game_server.python_process.end(function (err) {
-				// killing python process
-				if (err) throw err;
-					console.log('Python process killed');
-			});
+            
+            for (var i = 0; i<this.game.gamecore.players.length; i++){
+                this.game.gamecore.players[i].send('s.e');
+            }
+            
+            game_server.python_process.end(function (err) {
+                // killing python process
+                if (err) throw err;
+                    console.log('Python process killed');
+            });
 
         } else {
             this.log('The game was not found!');
@@ -126,17 +126,17 @@
 
     };
 
-	game_server.newPlayer = function(client) {
-		this.game.gamecore.server_new_player(client);
-		this.game.player_count++;
-	} 
-	
-	game_server.playerLeave = function(client){
-		this.game.gamecore.server_player_leave(client);
-		this.game.player_count--;
-	}
-	
-	game_server.onClientInputs = function(client, inputs){
-		this.game.gamecore.server_handle_client_inputs(client, inputs);
-	};
+    game_server.newPlayer = function(client) {
+        this.game.gamecore.server_new_player(client);
+        this.game.player_count++;
+    } 
+    
+    game_server.playerLeave = function(client){
+        this.game.gamecore.server_player_leave(client);
+        this.game.player_count--;
+    }
+    
+    game_server.onClientInputs = function(client, inputs){
+        this.game.gamecore.server_handle_client_inputs(client, inputs);
+    };
 

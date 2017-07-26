@@ -80,43 +80,43 @@
 
     });
 
-	//Enter the game server code. The game server handles
-	//client connections looking for a game, creating games,
-	//leaving games, joining games and ending games when they leave.
+    //Enter the game server code. The game server handles
+    //client connections looking for a game, creating games,
+    //leaving games, joining games and ending games when they leave.
     game_server = require('./game.server.js');
-	game_server.createGame();
+    game_server.createGame();
 
-	//Socket.io will call this function when a client connects,
-	//So we can send that client looking for a game to play,
-	//as well as give that client a unique ID to use so we can
-	//maintain the list if players.
+    //Socket.io will call this function when a client connects,
+    //So we can send that client looking for a game to play,
+    //as well as give that client a unique ID to use so we can
+    //maintain the list if players.
     sio.sockets.on('connection', function (client) {
         
-		//Generate a new UUID, looks something like
-		//5b2ca132-64bd-4513-99da-90e838ca47d1
-		//and store this on their socket/connection
+        //Generate a new UUID, looks something like
+        //5b2ca132-64bd-4513-99da-90e838ca47d1
+        //and store this on their socket/connection
         client.userid = UUID();
 
-		//now we can find them a game to play with someone.
-		//if no game exists with someone waiting, they create one and wait.
+        //now we can find them a game to play with someone.
+        //if no game exists with someone waiting, they create one and wait.
         game_server.newPlayer(client);
         
 
-		//Now we want to handle some of the messages that clients will send.
-		//They send messages here, and we send them to the game_server to handle.
+        //Now we want to handle some of the messages that clients will send.
+        //They send messages here, and we send them to the game_server to handle.
         client.on('message', function(m) {
-			game_server.onMessage(client, m);
+            game_server.onMessage(client, m);
         });
-		
-		client.on('input', function(inputs) {
-			game_server.onClientInputs(client, inputs);
-		});
+        
+        client.on('input', function(inputs) {
+            game_server.onClientInputs(client, inputs);
+        });
 
-		//When this client disconnects, we want to tell the game server
-		//about that as well, so it can remove them from the game they are
-		//in, and make sure the other player knows that they left and so on.
+        //When this client disconnects, we want to tell the game server
+        //about that as well, so it can remove them from the game they are
+        //in, and make sure the other player knows that they left and so on.
         client.on('disconnect', function () {
-			game_server.playerLeave(client);
+            game_server.playerLeave(client);
 
 
         });

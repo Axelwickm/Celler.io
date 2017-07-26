@@ -55,78 +55,78 @@ var server_physics_update_every = 50; // Incudes physics updates every 50th upda
         //both server and client. Server creates one for
         //each game that is hosted, and client creates one
         //for itself to play the game.
-		
+        
 
 /* The game_core class */
 
 if('undefined' != typeof(global)) var p2 = require('p2');
 var game_core = function(game_instance){
 
-	//Store the instance, if any
-	this.instance = game_instance;
-	//If instance exists, this is server
-	this.server = this.instance !== undefined;
-	
-	
-	console.log('Is server: '+this.server);
-	
+    //Store the instance, if any
+    this.instance = game_instance;
+    //If instance exists, this is server
+    this.server = this.instance !== undefined;
+    
+    
+    console.log('Is server: '+this.server);
+    
 
-	//Used in collision etc.
-	this.world = {
-		width : 1000,
-		height : 500
-	};
-	
+    //Used in collision etc.
+    this.world = {
+        width : 1000,
+        height : 500
+    };
+    
 
-	//Set up some physics integration values
-	this._pdt = 0.0001;                 //The physics update delta time
-	this._pdte = new Date().getTime();  //The physics update last delta time
-	//A local timer for precision on server and client
-	this.local_time = 0.016;            //The local timer
-	this._dt = new Date().getTime();    //The local timer delta
-	this._dte = new Date().getTime();   //The local timer last frame time
+    //Set up some physics integration values
+    this._pdt = 0.0001;                 //The physics update delta time
+    this._pdte = new Date().getTime();  //The physics update last delta time
+    //A local timer for precision on server and client
+    this.local_time = 0.016;            //The local timer
+    this._dt = new Date().getTime();    //The local timer delta
+    this._dte = new Date().getTime();   //The local timer last frame time
 
-	//Start a physics loop, this is separate to the rendering
-	//as this happens at a fixed frequency
-	this.create_physics_simulation();
-	
-	this.gs = new game_state(this);
+    //Start a physics loop, this is separate to the rendering
+    //as this happens at a fixed frequency
+    this.create_physics_simulation();
+    
+    this.gs = new game_state(this);
 
-	//Start a fast paced timer for measuring time easier
-	this.create_timer();
+    //Start a fast paced timer for measuring time easier
+    this.create_timer();
 
-	//Client specific initialisation
-	if(!this.server) {
+    //Client specific initialisation
+    if(!this.server) {
 
-		//Create a keyboard handler
-		this.keyboard = new THREEx.KeyboardState();
+        //Create a keyboard handler
+        this.keyboard = new THREEx.KeyboardState();
 
-		//Create the default configuration settings
-		this.client_create_configuration();
-		//A list of recent server updates we interpolate across
-		//This is the buffer that is the driving factor for our networking
-		this.server_updates = [];
+        //Create the default configuration settings
+        this.client_create_configuration();
+        //A list of recent server updates we interpolate across
+        //This is the buffer that is the driving factor for our networking
+        this.server_updates = [];
 
-		//Connect to the socket.io server!
-		this.client_connect_to_server();
+        //Connect to the socket.io server!
+        this.client_connect_to_server();
 
-		//We start pinging the server to determine latency
-		this.client_create_ping_timer();
-		
-		//Create debug gui
-		this.client_create_debug_gui();
-		
-	} else { //if !server
+        //We start pinging the server to determine latency
+        this.client_create_ping_timer();
+        
+        //Create debug gui
+        this.client_create_debug_gui();
+        
+    } else { //if !server
 
-		this.server_time = 0;
-		this.server_updates = 0;
-		
-		// Add some test cells to the gamestate
-	
-		for (var i = 0; i<100; i++){
-			this.gs.add(new Cell(this, {p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],p_vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
-		};
-	}
+        this.server_time = 0;
+        this.server_updates = 0;
+        
+        // Add some test cells to the gamestate
+    
+        for (var i = 0; i<100; i++){
+            this.gs.add(new Cell(this, {p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],p_vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
+        };
+    }
 
 };
 
@@ -135,179 +135,179 @@ if( 'undefined' != typeof global ) module.exports = global.game_core = game_core
 
 
 /*
-	The gamestate class
-	Contains the actuall game data and logs the changes made to it 
+    The gamestate class
+    Contains the actuall game data and logs the changes made to it 
 */
 var game_state = function(gamecore){
-	this.gamecore = gamecore;
-	this.server = gamecore.server;
-	this.client_initial = true;
-	this.deletions = [];
-	
-	this.cells = [];
-	this.players = [];
+    this.gamecore = gamecore;
+    this.server = gamecore.server;
+    this.client_initial = true;
+    this.deletions = [];
+    
+    this.cells = [];
+    this.players = [];
 }
 
 game_state.prototype.add = function(obj){
-	this[obj.type].push(obj);
-	if (this.server){
-		obj.update = {e:'add',data:[]};
-		for (var prop in obj){
-			if (obj.hasOwnProperty(prop)){
-				obj.update.data.push(prop);
-			}
-		}
-	}	
+    this[obj.type].push(obj);
+    if (this.server){
+        obj.update = {e:'add',data:[]};
+        for (var prop in obj){
+            if (obj.hasOwnProperty(prop)){
+                obj.update.data.push(prop);
+            }
+        }
+    }   
 }
 
 game_state.prototype.erase = function(obj){
-	var index = this[obj.type].indexOf(obj);
-	this[obj.type].splice(index, 1);
-	if (this.server){
-		this.deletions.push({type:obj.type, index:index});
-	}
+    var index = this[obj.type].indexOf(obj);
+    this[obj.type].splice(index, 1);
+    if (this.server){
+        this.deletions.push({type:obj.type, index:index});
+    }
 }
 
 game_state.prototype.edit = function(obj, p, v){
-	obj[p] = v;
-	// 'add' takes priority over 'edit'
-	if (this.server && (obj.update.e.length == 0 || obj.update.e == 'edit')){
-		obj.update.e = 'edit';
-		obj.update.data.push(p);
-	}
+    obj[p] = v;
+    // 'add' takes priority over 'edit'
+    if (this.server && (obj.update.e.length == 0 || obj.update.e == 'edit')){
+        obj.update.e = 'edit';
+        obj.update.data.push(p);
+    }
 }
 
 game_state.prototype.server_get_changes = function(simulation_status, all_data){ 
-	var blacklist = ['update', 'body', 'instance'];
-	var changes = [];
-	
-	// Loop through both cells and players
-	for (var i = 0; i < this.cells.length + this.players.length; i++){
-		var obj;
-		if (i < this.cells.length)
-			obj = this.cells[i];
-		else
-			obj = this.players[i % this.cells.length];
-		// The change variable of this object
-		var change = {};
-		if (all_data){
-			for (var prop in obj){
-				// Skip if property is blacklisted
-				if (blacklist.indexOf(prop) != -1 || !obj.hasOwnProperty(prop)) continue;
-				change[prop] = obj[prop];
-			}
-		}
-		else {
-			for (var j = 0; j<obj.update.data.length; j++){ // Loop through changed properties
-				// Skip if property is blacklisted
-				if (blacklist.indexOf(obj.update.data[j]) != -1) continue; 
-				// Add the changed property with value to this change 
-				change[obj.update.data[j]] = obj[obj.update.data[j]];
-			}
-		}
-		// Adding simulation data which is otherwise hidden in body member
-		if (simulation_status && obj.body){
-			change.p_pos = obj.body.position;
-			change.p_ang = obj.body.angle;
-			change.p_vel = obj.body.velocity;
-			change.p_angvel = obj.body.angularVelocity;
-		}
-		//Push the type of action made
-		change.e = obj.update.e;
-		change.type = obj.type;
-		change.update_id = i % this.cells.length;
-		if (3<Object.keys(change).length && change.e == '' && !all_data) change.e = 'edit';
-		// Push change to changes array
-		if (change.e != '' || all_data)
-			changes.push(change);
-		// Remove update data
-		obj.update.e = '';
-		obj.update.data = [];
-	}
-	var to_send = {
-		c:changes,
-		d:this.deletions
-	}
-	this.deletions = [];
-	// Return in object wrapper
-	return to_send; 
+    var blacklist = ['update', 'body', 'instance'];
+    var changes = [];
+    
+    // Loop through both cells and players
+    for (var i = 0; i < this.cells.length + this.players.length; i++){
+        var obj;
+        if (i < this.cells.length)
+            obj = this.cells[i];
+        else
+            obj = this.players[i % this.cells.length];
+        // The change variable of this object
+        var change = {};
+        if (all_data){
+            for (var prop in obj){
+                // Skip if property is blacklisted
+                if (blacklist.indexOf(prop) != -1 || !obj.hasOwnProperty(prop)) continue;
+                change[prop] = obj[prop];
+            }
+        }
+        else {
+            for (var j = 0; j<obj.update.data.length; j++){ // Loop through changed properties
+                // Skip if property is blacklisted
+                if (blacklist.indexOf(obj.update.data[j]) != -1) continue; 
+                // Add the changed property with value to this change 
+                change[obj.update.data[j]] = obj[obj.update.data[j]];
+            }
+        }
+        // Adding simulation data which is otherwise hidden in body member
+        if (simulation_status && obj.body){
+            change.p_pos = obj.body.position;
+            change.p_ang = obj.body.angle;
+            change.p_vel = obj.body.velocity;
+            change.p_angvel = obj.body.angularVelocity;
+        }
+        //Push the type of action made
+        change.e = obj.update.e;
+        change.type = obj.type;
+        change.update_id = i % this.cells.length;
+        if (3<Object.keys(change).length && change.e == '' && !all_data) change.e = 'edit';
+        // Push change to changes array
+        if (change.e != '' || all_data)
+            changes.push(change);
+        // Remove update data
+        obj.update.e = '';
+        obj.update.data = [];
+    }
+    var to_send = {
+        c:changes,
+        d:this.deletions
+    }
+    this.deletions = [];
+    // Return in object wrapper
+    return to_send; 
 }
 
 game_state.prototype.client_load_changes = function(data){
-	for (var i = 0; i < data.d.length; i++){
-		var object = data.d[i];
-		this[object.type].splice([object.index], 1);
-	}
-	
-	var player_i = 0;
-	for (var i = 0; i < data.c.length; i++){
-		var change = data.c[i];
-		if (change.type == 'cells'){
-			if (change.e == 'add' || this.client_initial) this.add(new Cell(this.gamecore, change));
-			else if (change.e == 'edit') {
-				for (var prop in change){
-					if (prop != 'e' && prop.substring(0,2) == 'p_') {
-						if (prop == 'p_pos')	 	 this.cells[change.update_id].body['position'] = change[prop];
-						else if (prop == 'p_ang') 	 this.cells[change.update_id].body['angle'] = change[prop];
-						else if (prop == 'p_vel')	 this.cells[change.update_id].body['velocity'] = change[prop];
-						else if (prop == 'p_angvel') this.cells[change.update_id].body['angularVelocity'] = change[prop];
-					}
-					else if (prop != 'e' ) this.cells[change.update_id][prop] = change[prop];
-				}
-			}
-		}
-		else if (change.type == 'players'){
-			if (change.e == 'add' || this.client_initial) this.add(new Player(this.gamecore, change));
-			else if (change.e == 'edit'){
-				for (var prop in change){
-					if (prop != 'e' ) this.players[change.update_id][prop] = change[prop];
-				}
-			}
-		}
-	}
-	
-	
-	this.client_initial = false;
+    for (var i = 0; i < data.d.length; i++){
+        var object = data.d[i];
+        this[object.type].splice([object.index], 1);
+    }
+    
+    var player_i = 0;
+    for (var i = 0; i < data.c.length; i++){
+        var change = data.c[i];
+        if (change.type == 'cells'){
+            if (change.e == 'add' || this.client_initial) this.add(new Cell(this.gamecore, change));
+            else if (change.e == 'edit') {
+                for (var prop in change){
+                    if (prop != 'e' && prop.substring(0,2) == 'p_') {
+                        if (prop == 'p_pos')         this.cells[change.update_id].body['position'] = change[prop];
+                        else if (prop == 'p_ang')    this.cells[change.update_id].body['angle'] = change[prop];
+                        else if (prop == 'p_vel')    this.cells[change.update_id].body['velocity'] = change[prop];
+                        else if (prop == 'p_angvel') this.cells[change.update_id].body['angularVelocity'] = change[prop];
+                    }
+                    else if (prop != 'e' ) this.cells[change.update_id][prop] = change[prop];
+                }
+            }
+        }
+        else if (change.type == 'players'){
+            if (change.e == 'add' || this.client_initial) this.add(new Player(this.gamecore, change));
+            else if (change.e == 'edit'){
+                for (var prop in change){
+                    if (prop != 'e' ) this.players[change.update_id][prop] = change[prop];
+                }
+            }
+        }
+    }
+    
+    
+    this.client_initial = false;
 }
 
 /* The Player class */
 
 var Player = function(client){
-	this.type = 'players';
-	this.instance = client;
-	this.userid = client.userid;
+    this.type = 'players';
+    this.instance = client;
+    this.userid = client.userid;
 }
 
 /*
-	Gameplay classes
+    Gameplay classes
 */
 
 
 var Cell = function(gamecore, options){
-	this.type = options.type || 'cells';
-	this.food = options.food || 5;
-	this.color = options.color || '#ff0000';
-	this.body = new p2.Body({
-		mass: this.food,
-		position: options.p_pos,
-		angle: options.p_angle || 0,
-		velocity: options.p_vel || [0,0],
-		angularVelocity: options.p_angvel || 0,
-		damping:0.00
-	});
-		
-	var circleShape = new p2.Circle({ radius: 8*Math.sqrt(this.food/Math.PI) });
-	this.body.addShape(circleShape);
-	
-	gamecore.physics.addBody(this.body);
+    this.type = options.type || 'cells';
+    this.food = options.food || 5;
+    this.color = options.color || '#ff0000';
+    this.body = new p2.Body({
+        mass: this.food,
+        position: options.p_pos,
+        angle: options.p_angle || 0,
+        velocity: options.p_vel || [0,0],
+        angularVelocity: options.p_angvel || 0,
+        damping:0.00
+    });
+        
+    var circleShape = new p2.Circle({ radius: 8*Math.sqrt(this.food/Math.PI) });
+    this.body.addShape(circleShape);
+    
+    gamecore.physics.addBody(this.body);
 }
 
 
 Cell.prototype.draw = function(){
-	game.ctx.fillStyle = this.color;
+    game.ctx.fillStyle = this.color;
     game.ctx.beginPath();
-	game.ctx.arc( this.body.position[0], this.body.position[1], this.body.shapes[0].radius, 0, Math.PI * 2 );
-	game.ctx.fill();
+    game.ctx.arc( this.body.position[0], this.body.position[1], this.body.shapes[0].radius, 0, Math.PI * 2 );
+    game.ctx.fill();
 }
 
 
@@ -358,7 +358,7 @@ game_core.prototype.update = function(t) {
 
         //Update the game specifics
     if(this.server) {
-		this.server_update();
+        this.server_update();
     } else {
         this.client_update();
     }
@@ -376,14 +376,14 @@ game_core.prototype.update = function(t) {
 
 
 game_core.prototype.update_physics = function() {
-	this.physics.step(physics_timestep);
+    this.physics.step(physics_timestep);
 
     if(this.server) {
         this.server_update_physics();
     } else {
         this.client_update_physics();
     }
-	
+    
 };
 
 /*
@@ -397,14 +397,14 @@ game_core.prototype.update_physics = function() {
 
     //Updated at 15ms , simulates the world state
 game_core.prototype.server_update_physics = function() {
-	if (this.server_time>5 && this.gs.cells[0].color != '#00ff00'){
-		this.gs.edit(this.gs.cells[0], 'color','#00ff00');
-		this.gs.erase(this.gs.cells[2]);
-		this.gs.erase(this.gs.cells[2]);
-		this.gs.erase(this.gs.cells[4]);
-	}
+    if (this.server_time>5 && this.gs.cells[0].color != '#00ff00'){
+        this.gs.edit(this.gs.cells[0], 'color','#00ff00');
+        this.gs.erase(this.gs.cells[2]);
+        this.gs.erase(this.gs.cells[2]);
+        this.gs.erase(this.gs.cells[4]);
+    }
 
-		//this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
+        //this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
 };
 
 //Makes sure things run smoothly and notifies clients of changes
@@ -413,73 +413,73 @@ game_core.prototype.server_update = function(){
 
     //Update the state of our local clock to match the timer
     this.server_time = this.local_time;
-	this.server_updates++;
+    this.server_updates++;
 
     //Make a snapshot of the current state, for updating the clients
-	var gamestate_change;
-	if (this.server_updates%server_physics_update_every == 0)
-		gamestate_change = this.gs.server_get_changes(true, false);
-	else
-		gamestate_change = this.gs.server_get_changes(false, false);
-	
-	gamestate_change.t = this.server_time;
-	
-	for (var i = 0; i<this.gs.players.length; i++){
-		this.gs.players[i].instance.emit( 'onserverupdate', gamestate_change);
-	}
+    var gamestate_change;
+    if (this.server_updates%server_physics_update_every == 0)
+        gamestate_change = this.gs.server_get_changes(true, false);
+    else
+        gamestate_change = this.gs.server_get_changes(false, false);
+    
+    gamestate_change.t = this.server_time;
+    
+    for (var i = 0; i<this.gs.players.length; i++){
+        this.gs.players[i].instance.emit( 'onserverupdate', gamestate_change);
+    }
 
 };
 
 game_core.prototype.server_new_player = function(client){
-	var player = new Player(client);
-	this.gs.add(player);
-	
-	var gamestate_to_client = this.gs.server_get_changes(true, true);
-	gamestate_to_client.t = this.server_time;
-	gamestate_to_client.playerIndex = this.gs.players.length-1;
-	
-	player.instance.emit('onserverupdate', gamestate_to_client);
-	
-	console.log('Player connected - ID: '+player.userid);
+    var player = new Player(client);
+    this.gs.add(player);
+    
+    var gamestate_to_client = this.gs.server_get_changes(true, true);
+    gamestate_to_client.t = this.server_time;
+    gamestate_to_client.playerIndex = this.gs.players.length-1;
+    
+    player.instance.emit('onserverupdate', gamestate_to_client);
+    
+    console.log('Player connected - ID: '+player.userid);
 };
 
 game_core.prototype.server_player_leave = function(client){
-	var index = null;
-	for (var i = 0; i < this.gs.players.length; i++){
-		if (this.gs.players[i].userid == client.userid){
-			index = i;
-			break;
-		}
-	}
-	console.log('Player left - ID: '+this.gs.players[index].userid);
-	this.gs.erase(this.gs.players[index]);
-	
+    var index = null;
+    for (var i = 0; i < this.gs.players.length; i++){
+        if (this.gs.players[i].userid == client.userid){
+            index = i;
+            break;
+        }
+    }
+    console.log('Player left - ID: '+this.gs.players[index].userid);
+    this.gs.erase(this.gs.players[index]);
+    
 };
 
 game_core.prototype.server_handle_client_inputs = function(client, inputs){
-	for (var i in inputs){
-		var action = inputs[i].action;
-		if (action == 'click cell'){
-			if (this.gs.cells[inputs[i].cellID].color == '#ff0000')
-				this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#0000ff');
-			else
-				this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#ff0000');
-		}
-	}
+    for (var i in inputs){
+        var action = inputs[i].action;
+        if (action == 'click cell'){
+            if (this.gs.cells[inputs[i].cellID].color == '#ff0000')
+                this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#0000ff');
+            else
+                this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#ff0000');
+        }
+    }
 };
 
 game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {
     //Fetch which client this refers to
     var player = null;
-	for (var i = 0; i<this.gs.players.length; i++){
-		if (client.userid == this.gs.players[i].instance.userid){
-			player = this.gs.players[i];
-			break;
-		}
-	}
-	
-	if (!player)
-		console.error('Player with client.userid '+client.userid+', could not be found on server handle input.');
+    for (var i = 0; i<this.gs.players.length; i++){
+        if (client.userid == this.gs.players[i].instance.userid){
+            player = this.gs.players[i];
+            break;
+        }
+    }
+    
+    if (!player)
+        console.error('Player with client.userid '+client.userid+', could not be found on server handle input.');
 
 };
 
@@ -494,32 +494,32 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
 */
 
 game_core.prototype.client_click_cell = function(cellID){
-	this.me.inputs.push({
-		action:'click cell',
-		cellID:cellID
-	});
-	
-	if (this.gs.cells[cellID].color == '#ff0000')
-		this.gs.cells[cellID].color = '#00ff66';
-	else
-		this.gs.cells[cellID].color = '#ff0000';
+    this.me.inputs.push({
+        action:'click cell',
+        cellID:cellID
+    });
+    
+    if (this.gs.cells[cellID].color == '#ff0000')
+        this.gs.cells[cellID].color = '#00ff66';
+    else
+        this.gs.cells[cellID].color = '#ff0000';
 };
 
 
 game_core.prototype.client_update_physics = function() {
-	
+    
 };
 
 game_core.prototype.client_update = function() {
     //Clear the screen area
     this.ctx.clearRect(0,0,this.viewport.width,this.viewport.height);
-	
-	this.camera.begin();
-	
-	for (var i = 0; i<this.gs.cells.length; i++)
-		this.gs.cells[i].draw();
-	
-	this.camera.end();
+    
+    this.camera.begin();
+    
+    for (var i = 0; i<this.gs.cells.length; i++)
+        this.gs.cells[i].draw();
+    
+    this.camera.end();
 
 
     //Capture inputs from the player
@@ -539,102 +539,102 @@ game_core.prototype.create_timer = function(){
 } 
 
 game_core.prototype.create_physics_simulation = function() {
-	this.physics = new p2.World({gravity:[0,0]});
-	this.physics.defaultContactMaterial.friction = 0.5;
-	this.physics.defaultContactMaterial.stiffness = 800;
-	this.physics.defaultContactMaterial.restitution = 1;
-	
-	// World boundaries
-	this.physics.boundaries = new p2.Body({position:[this.world.width/2,this.world.height]});
-	this.physics.boundaries.addShape(new p2.Line({length:this.world.width}));
-	this.physics.addBody(this.physics.boundaries);
-	this.physics.boundaries = new p2.Body({position:[this.world.width/2,0]});
-	this.physics.boundaries.addShape(new p2.Line({length:this.world.width}));
-	this.physics.addBody(this.physics.boundaries);
-	this.physics.boundaries = new p2.Body({position:[0,this.world.height/2],angle:Math.PI/2});
-	this.physics.boundaries.addShape(new p2.Line({length:this.world.height}));
-	this.physics.addBody(this.physics.boundaries);
-	this.physics.boundaries = new p2.Body({position:[this.world.width,this.world.height/2],angle:Math.PI/2});
-	this.physics.boundaries.addShape(new p2.Line({length:this.world.height}));
-	this.physics.addBody(this.physics.boundaries);
-	
-	setInterval(function(){
+    this.physics = new p2.World({gravity:[0,0]});
+    this.physics.defaultContactMaterial.friction = 0.5;
+    this.physics.defaultContactMaterial.stiffness = 800;
+    this.physics.defaultContactMaterial.restitution = 1;
+    
+    // World boundaries
+    this.physics.boundaries = new p2.Body({position:[this.world.width/2,this.world.height]});
+    this.physics.boundaries.addShape(new p2.Line({length:this.world.width}));
+    this.physics.addBody(this.physics.boundaries);
+    this.physics.boundaries = new p2.Body({position:[this.world.width/2,0]});
+    this.physics.boundaries.addShape(new p2.Line({length:this.world.width}));
+    this.physics.addBody(this.physics.boundaries);
+    this.physics.boundaries = new p2.Body({position:[0,this.world.height/2],angle:Math.PI/2});
+    this.physics.boundaries.addShape(new p2.Line({length:this.world.height}));
+    this.physics.addBody(this.physics.boundaries);
+    this.physics.boundaries = new p2.Body({position:[this.world.width,this.world.height/2],angle:Math.PI/2});
+    this.physics.boundaries.addShape(new p2.Line({length:this.world.height}));
+    this.physics.addBody(this.physics.boundaries);
+    
+    setInterval(function(){
         this._pdt = (new Date().getTime() - this._pdte)/1000.0;
         this._pdte = new Date().getTime();
-        this.update_physics();	
+        this.update_physics();  
     }.bind(this), physics_frame);
 
 };
 
 
 game_core.prototype.create_camera = function() {
-	this.camera = new Camera(this.ctx);
-	this.camera.zoomTo(2000);
-	this.camera.moveTo(this.world.width/2, this.world.height/2);
-	
-	this.viewport.onmousemove = function(e){
-		e = e || window.event;
-		game.oldMouse.x = game.mouseX;
-		game.oldMouse.y = game.mouseY;
-		game.mouseX = e.offsetX;
-		game.mouseY = e.offsetY;
-		
-		if (game.dragging != -1){
-			var oldScreen = game.camera.screenToWorld(game.mouseX, game.mouseY);
-			var newScreen = game.camera.screenToWorld(game.oldMouse.x, game.oldMouse.y);
-			game.camera.moveTo(game.camera.lookat[0]+newScreen.x-oldScreen.x, game.camera.lookat[1]+newScreen.y-oldScreen.y);
-		}
-	};
-	
-	this.viewport.onclick = function(e){
-		e = e || window.event;
-		var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
-		var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
-		
-		if (clicked_cell_bodies.length != 0){
-			for(var i = 0; i<game.gs.cells.length; i++)
-				if (game.gs.cells[i].body == clicked_cell_bodies[0]){
-					game.client_click_cell(i);
-					break;
-				}	
-		}
-			
-	};
-	
-	this.viewport.onmousedown = function(e){
-		e = e || window.event;
-		if (event.button == 0) {
-			game.dragging = 0;
-			game.viewport.style.cursor = 'move';
-		}
-	};
-	this.viewport.onmouseup = function(e){
-		e = e || window.event;
-		if (event.button == 0) {
-			game.dragging = -1;
-			game.viewport.style.cursor = "default";
-		}
-	};
-	
-	this.viewport.onmouseleave = function(e){
-		e = e || window.event;
-		game.dragging = -1;
-		game.viewport.style.cursor = "default";
-	};
-	
-	
-	scrollHandler = function(e){
-		var e = window.event || e;
-		var delta = -Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
-	
-		var oldPos = game.camera.screenToWorld(game.mouseX, game.mouseY);
-		game.camera.zoomTo(Math.max(game.camera.distance+delta*100*Math.sqrt(game.camera.distance/1000), 25));
-		var newPos = game.camera.screenToWorld(game.mouseX, game.mouseY);
-		game.camera.moveTo(game.camera.lookat[0]+oldPos.x-newPos.x, game.camera.lookat[1]+oldPos.y-newPos.y);
-	};
-	this.viewport.addEventListener("mousewheel", scrollHandler, false);    // IE9, Chrome, Safari, Opera
-	this.viewport.addEventListener("DOMMouseScroll", scrollHandler, false);// Firefox
-	this.viewport.addEventListener("onmousewheel", scrollHandler, false);  // IE 6/7/8
+    this.camera = new Camera(this.ctx);
+    this.camera.zoomTo(2000);
+    this.camera.moveTo(this.world.width/2, this.world.height/2);
+    
+    this.viewport.onmousemove = function(e){
+        e = e || window.event;
+        game.oldMouse.x = game.mouseX;
+        game.oldMouse.y = game.mouseY;
+        game.mouseX = e.offsetX;
+        game.mouseY = e.offsetY;
+        
+        if (game.dragging != -1){
+            var oldScreen = game.camera.screenToWorld(game.mouseX, game.mouseY);
+            var newScreen = game.camera.screenToWorld(game.oldMouse.x, game.oldMouse.y);
+            game.camera.moveTo(game.camera.lookat[0]+newScreen.x-oldScreen.x, game.camera.lookat[1]+newScreen.y-oldScreen.y);
+        }
+    };
+    
+    this.viewport.onclick = function(e){
+        e = e || window.event;
+        var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
+        var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
+        
+        if (clicked_cell_bodies.length != 0){
+            for(var i = 0; i<game.gs.cells.length; i++)
+                if (game.gs.cells[i].body == clicked_cell_bodies[0]){
+                    game.client_click_cell(i);
+                    break;
+                }   
+        }
+            
+    };
+    
+    this.viewport.onmousedown = function(e){
+        e = e || window.event;
+        if (event.button == 0) {
+            game.dragging = 0;
+            game.viewport.style.cursor = 'move';
+        }
+    };
+    this.viewport.onmouseup = function(e){
+        e = e || window.event;
+        if (event.button == 0) {
+            game.dragging = -1;
+            game.viewport.style.cursor = "default";
+        }
+    };
+    
+    this.viewport.onmouseleave = function(e){
+        e = e || window.event;
+        game.dragging = -1;
+        game.viewport.style.cursor = "default";
+    };
+    
+    
+    scrollHandler = function(e){
+        var e = window.event || e;
+        var delta = -Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+    
+        var oldPos = game.camera.screenToWorld(game.mouseX, game.mouseY);
+        game.camera.zoomTo(Math.max(game.camera.distance+delta*100*Math.sqrt(game.camera.distance/1000), 25));
+        var newPos = game.camera.screenToWorld(game.mouseX, game.mouseY);
+        game.camera.moveTo(game.camera.lookat[0]+oldPos.x-newPos.x, game.camera.lookat[1]+oldPos.y-newPos.y);
+    };
+    this.viewport.addEventListener("mousewheel", scrollHandler, false);    // IE9, Chrome, Safari, Opera
+    this.viewport.addEventListener("DOMMouseScroll", scrollHandler, false);// Firefox
+    this.viewport.addEventListener("onmousewheel", scrollHandler, false);  // IE 6/7/8
 };
 
 
@@ -661,11 +661,11 @@ game_core.prototype.client_create_configuration = function() {
 
     this.lit = 0;
     this.llt = new Date().getTime();
-	
-	this.mouseX = 0;
-	this.mouseY = 0;
-	this.oldMouse = {x:0, y:0}
-	this.dragging = -1;
+    
+    this.mouseX = 0;
+    this.mouseY = 0;
+    this.oldMouse = {x:0, y:0}
+    this.dragging = -1;
 
 };
 
@@ -674,7 +674,7 @@ game_core.prototype.client_create_debug_gui = function() {
     this.gui = new dat.GUI();
 
     var _playersettings = this.gui.addFolder('Your settings');
-	
+    
     var _debugsettings = this.gui.addFolder('Debug view');
         
         _debugsettings.add(this, 'fps_avg').listen();
@@ -713,41 +713,41 @@ game_core.prototype.client_refresh_fps = function() {
 
 game_core.prototype.client_handle_input = function(){
 
-	//This takes input from the client and keeps a record,
-	//It also sends the input information to the server immediately
-	//as it is pressed. It also tags each input with a sequence number.
-	
-	if (game.dragging != -1)
-		game.dragging++;
-	
-	if (this.me){
-		if (this.me.inputs)
-			this.socket.emit('input', this.me.inputs );
-		this.me.inputs = [];
-	}
+    //This takes input from the client and keeps a record,
+    //It also sends the input information to the server immediately
+    //as it is pressed. It also tags each input with a sequence number.
+    
+    if (game.dragging != -1)
+        game.dragging++;
+    
+    if (this.me){
+        if (this.me.inputs)
+            this.socket.emit('input', this.me.inputs );
+        this.me.inputs = [];
+    }
 };
 
 /* 
-	Client Net Code
+    Client Net Code
 */
 
 game_core.prototype.client_onserverupdate_recieved = function(data){
         
-	// Store the server time (this is offset by the latency in the network, by the time we get it)
-	this.server_time = data.t;
-	this.local_time = data.t+this.net_latency;
-	
-	// 	Update our local offset time from the last server update
-	this.client_time = this.server_time - (this.net_offset/1000);
-	
-	// Load the data into gamestate
-	this.gs.client_load_changes(data);
-	
-	// Register certain player as "me" if a playerIndex is given, which it is on connect
-	if (data.playerIndex != undefined){
-		this.me = this.gs.players[data.playerIndex];
-		this.me.inputs = [];
-	}
+    // Store the server time (this is offset by the latency in the network, by the time we get it)
+    this.server_time = data.t;
+    this.local_time = data.t+this.net_latency;
+    
+    //  Update our local offset time from the last server update
+    this.client_time = this.server_time - (this.net_offset/1000);
+    
+    // Load the data into gamestate
+    this.gs.client_load_changes(data);
+    
+    // Register certain player as "me" if a playerIndex is given, which it is on connect
+    if (data.playerIndex != undefined){
+        this.me = this.gs.players[data.playerIndex];
+        this.me.inputs = [];
+    }
 };
 
 
@@ -820,5 +820,5 @@ game_core.prototype.client_onnetmessage = function(data) {
 };
 
 game_core.prototype.client_ondisconnect = function(data) {
-	console.log('Server disconnect');
+    console.log('Server disconnect');
 };
