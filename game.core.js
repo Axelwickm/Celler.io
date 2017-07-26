@@ -129,12 +129,12 @@ var game_core = function(game_instance){
 		console.log(this.gs.cells[0].matter);
 		var temperature = 5;
 		console.log('\nChemistry tests:');
-		for (var i = 0; i < 5; i++){
+		for (var i = 0; i < 10; i++){
 			var r = Matter.random_reaction(this.gs.cells[0].matter, temperature);
 			this.gs.cells[0].matter = r.matter;
 			temperature = r.temperature;
-			console.log('\nReaction '+i);
-			console.log(this.gs.cells[0].matter);
+			//console.log('\nReaction '+i);
+			//console.log(this.gs.cells[0].matter);
 		}
 		console.log('Chemistry tests over.\n')
 	}
