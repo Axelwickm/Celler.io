@@ -377,9 +377,9 @@ Matter.react = function(a, b, temperature){
 	var deltaG = deltaH;
 	console.log('Gibbs free energy: '+deltaG);
 	
+	//Check if reaction is sponaneus, which means it will happen
 	if (deltaG < 0){
-		//This means that the reaction is sponaneus, and will happen
-		temperature += deltaH;
+		temperature += deltaH * (newA.mass + newB.mass);
 		
 		var aC = 1, bC = 1;
 		var reactionCount = Math.floor( Math.min(a.count/aC, b.count/bC) );
