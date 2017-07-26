@@ -357,19 +357,22 @@ Matter.react = function(a, b, temperature){
 	var products = [];
 	
 	// Randomly move elements from a -> b 
-	var changes = Math.floor(Math.random() * (a.iform.length + 1)/4 ) - 1;
+	var changes = Math.ceil(Math.random() * (a.length-1) );
+
+	var aiform = a.iform;
+	var biform = b.iform;
 	for (var i = 0; i<changes; i++){
 		// Move set from a.iform to b.iform
 		var iformarray = a.iform.split(',');
 		var n = Math.floor( Math.random() * iformarray.length/2) * 2;
-		b.iform = b.iform.concat(','+iformarray[n]+','+iformarray[n+1]);
+		biform = b.iform.concat(','+iformarray[n]+','+iformarray[n+1]);
 		iformarray.splice(n, 2);
-		a.iform = iformarray.join();
+		aiform = iformarray.join();
 	}
 	
 	// See if this reaction makes gibbs free energy < 0
-	var newA = Matter.create(a.iform, a.count);
-	var newB = Matter.create(b.iform, b.count);
+	var newA = Matter.create(aiform, a.count);
+	var newB = Matter.create(biform, b.count);
 	
 	// Calculate deltaH
 	var deltaH =  a.enthalpy + b.enthalpy - newA.enthalpy - newB.enthalpy;
