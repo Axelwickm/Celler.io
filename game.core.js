@@ -300,8 +300,6 @@ var Matter = {}
 Matter.E_letters      = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'],
 // Number of possible bonds for elements
 Matter.E_bonds        = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
-// How much energy is stored in the bonds of elements (enthalpy)
-Matter.E_bondEnthalpy = [ 12, 11, 10, 9 , 8 , 7 , 6 , 5 , 4 , 3 , 2 , 1 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 ]
 
 Matter.add = function(matter, newCompound){
 	// Push the new compund if not all of it has been consumed
@@ -402,9 +400,14 @@ Matter.create = function(iform, count){
 	var enthalpy = 0;
 	for (var i = 0; i < iformarray.length ; i+=2){
 		free_bonds += Matter.E_bonds[iformarray[i+1]]*iformarray[i];
-		enthalpy += Matter.E_bondEnthalpy[iformarray[i+1]]*Math.abs(Matter.E_bonds[iformarray[i+1]])*Math.pow(iformarray[i], 0.75);
 	}
 	
+	for (var i = 0; i < iformarray.length ; i+=2){
+		enthalpy +=
+			Math.abs(free_bonds - Matter.E_bonds[iformarray[i+1]])
+			* 0.666*Math.pow(iformarray[i], 1.5);
+	}
+
 	return {
 		iform:iform,
 		length:iformarray.length/2,
