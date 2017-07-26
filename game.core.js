@@ -407,6 +407,7 @@ Matter.create = function(iform, count){
 	
 	return {
 		iform:iform,
+		length:iformarray.length/2,
 		count:count,
 		free_bonds:free_bonds,
 		enthalpy:enthalpy
