@@ -355,8 +355,11 @@ Matter.random_reaction = function(matter, temperature){
 
 Matter.react = function(a, b, temperature){
 	var products = [];
-	var changes = Math.floor(Math.random() * a.iform.length / 4);
 	
+	// Randomly move elements from a -> b 
+	var changes = Math.floor(Math.random() * ( a.iform.length / 4 - 1)) + 1;
+	console.log(changes);
+	console.log(a.iform);
 	for (var i = 0; i<changes; i++){
 		// Move set from a.iform to b.iform
 		var iformarray = a.iform.split(',');
@@ -366,13 +369,33 @@ Matter.react = function(a, b, temperature){
 		a.iform = iformarray.join();
 	}
 	
+	// See if this reaction makes gibbs free energy < 0
 	var newA = Matter.create(a.iform, a.count);
 	var newB = Matter.create(b.iform, b.count);
-	console.log('temperature: '+temperature);
-	temperature += 1;
 	
-	var aC = 1, bC = 1;
-	var reactionCount = Math.floor( Math.min(a.count/aC, b.count/bC) );
+	console.log('\n\nChanges');
+	console.log(a);
+	console.log(b);
+	console.log('To: ');
+	console.log(newA);
+	console.log(newB);
+	console.log('\n\n');
+	
+	
+	
+	// Calculate deltaH
+	var deltaH =  a.enthalpy + b.enthalpy - newA.enthalpy - newB.enthalpy;
+	var deltaG = deltaH;
+	console.log('Gibbs free energy: '+deltaG);
+	
+	if (deltaG < 0){
+		//This means that the reaction is sponaneus, and will happen
+		temperature += deltaH;
+		
+		var aC = 1, bC = 1;
+		var reactionCount = Math.floor( Math.min(a.count/aC, b.count/bC) );
+		
+	}
 	
 
 	return {
@@ -388,7 +411,7 @@ Matter.create = function(iform, count){
 	var enthalpy = 0;
 	for (var i = 0; i < iformarray.length ; i+=2){
 		free_bonds += Matter.E_bonds[iformarray[i+1]]*iformarray[i];
-		enthalpy += Matter.E_bondEnthalpy[iformarray[i+1]]*iformarray[i];
+		enthalpy += Matter.E_bondEnthalpy[iformarray[i+1]]*Math.abs(Matter.E_bonds[iformarray[i+1]])*Math.pow(iformarray[i], 0.75);
 	}
 	
 	return {
