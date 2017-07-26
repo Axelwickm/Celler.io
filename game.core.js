@@ -398,8 +398,11 @@ Matter.create = function(iform, count){
 
 	var free_bonds = 0;
 	var enthalpy = 0;
+	var mass = 0;
+	
 	for (var i = 0; i < iformarray.length ; i+=2){
 		free_bonds += Matter.E_bonds[iformarray[i+1]]*iformarray[i];
+		mass += parseInt(iformarray[i+1])+1;
 	}
 	
 	for (var i = 0; i < iformarray.length ; i+=2){
@@ -407,13 +410,16 @@ Matter.create = function(iform, count){
 			Math.abs(free_bonds - Matter.E_bonds[iformarray[i+1]])
 			* 0.666*Math.pow(iformarray[i], 1.5);
 	}
+	
+	mass /= 100;
 
 	return {
 		iform:iform,
 		length:iformarray.length/2,
 		count:count,
 		free_bonds:free_bonds,
-		enthalpy:enthalpy
+		enthalpy:enthalpy,
+		mass:mass
 	}
 }
 
