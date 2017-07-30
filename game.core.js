@@ -332,8 +332,11 @@ Matter.random_reaction = function(matter, temperature){
         // Add the products to the matter
 		for (var i = 0; i < reaction.products.length; i++){
             // Add product to matter if it doesn't exist, else add to the count
+            var product_iform = reaction.products[i].iform;
             var compound = matter.find(function(e){
-                return reaction.products[i].iform == e.iform;
+                return (product_iform.length == e.iform.length) && product_iform.every(function(element, index) {
+                    return element === e.iform[index]; 
+                });
             });
             
             if (compound)
@@ -366,26 +369,26 @@ Matter.react = function(a, b, temperature){
 	// Randomly move elements from a -> b 
 	var changes = Math.ceil(Math.random() * (a.length-1) );
 
-	var aiform = a.iform;
-	var biform = b.iform;
+	var aiform = a.iform.slice();
+	var biform = b.iform.slice();
 	for (var i = 0; i<changes; i++){
 		// Move set from a.iform to b.iform
-		var iformarray = a.iform.split(',');
-		var n = Math.floor( Math.random() * iformarray.length/2) * 2;
+		var n = Math.floor( Math.random() * aiform.length/2) * 2;
         var elementInB = -1;
         for (var j = 0; j<biform.length; j+=2){
-            if (biform[j+1] == iformarray[n+1]){
+            if (biform[j+1] == aiform[n+1]){
                 elementInB = j;
                 break;
             } 
         }
-        //console.log(elementInB);
-        if (elementInB == -1)
-            biform = biform.concat(','+iformarray[n]+','+iformarray[n+1]);
+
+        if (elementInB == -1){
+            biform.push(aiform[n]);
+            biform.push(aiform[n+1]);
+        }
         else
-            biform = biform.substr(0, elementInB)+parseInt(biform[elementInB])+parseInt(iformarray[n])+biform.substr(elementInB+1);
-		iformarray.splice(n, 2);
-		aiform = iformarray.join();
+            biform[elementInB] += parseInt(aiform[n]);
+		aiform.splice(n, 2);
 	}
 	
 	// See if this reaction makes gibbs free energy < 0
@@ -423,28 +426,34 @@ Matter.react = function(a, b, temperature){
 }
 
 Matter.create = function(iform, count){
-	var iformarray = iform.split(',');
-
+    // if iform is a string it is turned into a numberarray
+    if (typeof iform === 'string'){
+        iform = iform.split(',');
+        iform.forEach(function(e, i){
+            iform[i] = parseInt(e);
+        });
+    }
+    
 	var free_bonds = 0;
 	var enthalpy = 0;
 	var mass = 0;
 	
-	for (var i = 0; i < iformarray.length ; i+=2){
-		free_bonds += Matter.E_bonds[iformarray[i+1]]*iformarray[i];
-		mass += parseInt(iformarray[i+1])+1;
+	for (var i = 0; i < iform.length ; i+=2){
+		free_bonds += Matter.E_bonds[iform[i+1]]*iform[i];
+		mass += parseInt(iform[i+1])+1;
 	}
 	
-	for (var i = 0; i < iformarray.length ; i+=2){
+	for (var i = 0; i < iform.length ; i+=2){
 		enthalpy +=
-			Math.abs(free_bonds - Matter.E_bonds[iformarray[i+1]])
-			* 0.666*Math.pow(iformarray[i], 1.5);
+			Math.abs(free_bonds - Matter.E_bonds[iform[i+1]])
+			* 0.666*Math.pow(iform[i], 1.5);
 	}
 	
 	mass /= 100;
 
 	return {
 		iform:iform,
-		length:iformarray.length/2,
+		length:iform.length/2,
 		count:count,
 		free_bonds:free_bonds,
 		enthalpy:enthalpy,
@@ -454,12 +463,11 @@ Matter.create = function(iform, count){
 
 Matter.iform_to_text = function(iform){
 	var tform = '';
-	var iformarray = iform.split(',');
-	for (var c in iformarray){
+	for (var c in iform){
 		if (c%2 == 1)
-			tform = tform.concat( this.E_letters[iformarray[c]] );
+			tform = tform.concat( this.E_letters[iform[c]] );
 		else
-			tform = tform.concat( (c == 0 ? '':'_' ) + iformarray[c]);
+			tform = tform.concat( (c == 0 ? '':'_' ) + iform[c]);
 	}
 	return tform;
 }
