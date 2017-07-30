@@ -129,7 +129,7 @@ var game_core = function(game_instance){
 		console.log(this.gs.cells[0].matter);
 		var temperature = 5;
 		console.log('\nChemistry tests:');
-		for (var i = 0; i < 100; i++){
+		for (var i = 0; i < 1000; i++){
 			var r = Matter.random_reaction(this.gs.cells[0].matter, temperature);
 			this.gs.cells[0].matter = r.matter;
 			temperature = r.temperature;
@@ -137,9 +137,12 @@ var game_core = function(game_instance){
 			//console.log(this.gs.cells[0].matter);
 		}
         
+        this.gs.cells[0].matter = Matter.sortAlphabetically(this.gs.cells[0].matter);
+        
         for (var i = 0; i < this.gs.cells[0].matter.length; i++){
             console.log(this.gs.cells[0].matter[i].count+'  '+Matter.iform_to_text(this.gs.cells[0].matter[i].iform));
         }
+        
 		console.log('Chemistry tests over.\n')
 	}
 
@@ -472,6 +475,54 @@ Matter.create = function(iform, count){
 		enthalpy:enthalpy,
 		mass:mass
 	}
+}
+
+Matter.sortIform = function(iform){
+    var c = [];
+    for (var i = 0; i < iform.length; i+=2){
+        c.push({
+            e: iform[i+1],
+            c: iform[i]
+        });
+    };
+    
+    c.sort(function(a, b){
+        return a.e < b.e;
+    });
+    
+    iform = [];
+    c.forEach(function(e){
+        iform.push(e.c);
+        iform.push(e.e);
+    });
+}
+
+Matter.sortByMass = function(matter) {
+    // Sort iforms
+    for (var i = 0; i < matter.length; i++){
+        Matter.sortIform(matter[i].iform);
+    }
+    
+    // Sort by mass
+    return matter.sort(function(a, b){
+        return a.count*a.mass < b.count*b.mass;
+    });
+}
+
+Matter.sortAlphabetically = function(matter){
+    // Sort iforms
+    for (var i = 0; i < matter.length; i++){
+        Matter.sortIform(matter[i].iform);
+    }
+    
+    // Sort matter depending on iform
+    return matter.sort(function(a, b){
+        for (var i = 0; i < Math.max(a.iform.length, b.iform.length); i += 2){
+            if (!a.iform[i+1]) return false;
+            if (!b.iform[i+1]) return true;
+            if (a.iform[i+1] != b.iform[i+1]) return a.iform[i+1] < b.iform[i+1];
+        }
+    });
 }
 
 Matter.iform_to_text = function(iform){
