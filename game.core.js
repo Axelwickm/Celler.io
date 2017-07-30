@@ -379,7 +379,7 @@ Matter.react = function(a, b, temperature){
 	
 	//Check if reaction is sponaneus, which means it will happen
 	if (deltaG < 0){
-		temperature += deltaH * (newA.mass + newB.mass);
+		temperature -= deltaH * (newA.mass + newB.mass);
 		
 		// TODO: find most limited reactant
 		// This determines reaction rate
