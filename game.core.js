@@ -372,8 +372,15 @@ Matter.react = function(a, b, temperature){
 	var aiform = a.iform.slice();
 	var biform = b.iform.slice();
 	for (var i = 0; i<changes; i++){
-		// Move set from a.iform to b.iform
+		// Move set (amount, element) from a.iform to b.iform
+        
+        // Choose which element to move
 		var n = Math.floor( Math.random() * aiform.length/2) * 2;
+        // Choose how much of it to move
+        var q =  Math.floor( Math.random() * aiform[n]);
+        if (q == 0) q = 1;
+        
+        // See if this element already exists in b
         var elementInB = -1;
         for (var j = 0; j<biform.length; j+=2){
             if (biform[j+1] == aiform[n+1]){
@@ -381,14 +388,22 @@ Matter.react = function(a, b, temperature){
                 break;
             } 
         }
-
+        
         if (elementInB == -1){
-            biform.push(aiform[n]);
+            // Add element to b
+            biform.push(q);
             biform.push(aiform[n+1]);
         }
-        else
-            biform[elementInB] += parseInt(aiform[n]);
-		aiform.splice(n, 2);
+        else {
+            // Add quantity to element in b
+            biform[elementInB] += q;
+        }
+        
+        // Remove q of element from a
+        aiform[n] -= q;
+        // Remove element if it's below 0
+        if (aiform[n] <= 0)
+            aiform.splice(n, 2);
 	}
 	
 	// See if this reaction makes gibbs free energy < 0
