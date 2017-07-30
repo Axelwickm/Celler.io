@@ -312,13 +312,16 @@ Matter.E_bonds        = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 
 Matter.add = function(matter, newCompound){
     // Push the new compund if not all of it has been consumed
     if (newCompound.count != 0) {
-        var index = matter.findIndex(function(e){
-            return e.iform == newCompound.iform;
+        var compound = matter.find(function(e){
+            return (newCompound.length == e.iform.length) && newCompound.every(function(element, index) {
+                return element === e.iform[index]; 
+            });
         });
-        if (index == -1)
-            matter.push(newCompound);
+        
+        if (compound)
+            compound.count += newCompound.count;
         else 
-            matter[index].count += newCompound.count;
+            matter.push(newCompound);
     }   
     return matter;
 }
