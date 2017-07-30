@@ -455,7 +455,7 @@ Matter.create = function(iform, count){
 	
 	for (var i = 0; i < iform.length ; i+=2){
 		free_bonds += Matter.E_bonds[iform[i+1]]*iform[i];
-		mass += parseInt(iform[i+1])+1;
+		mass += iform[i+1]*iform[i]+1;
 	}
 	
 	for (var i = 0; i < iform.length ; i+=2){
@@ -463,8 +463,6 @@ Matter.create = function(iform, count){
 			Math.abs(free_bonds - Matter.E_bonds[iform[i+1]])
 			* 0.666*Math.pow(iform[i], 1.5);
 	}
-	
-	mass /= 100;
 
 	return {
 		iform:iform,
