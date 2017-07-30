@@ -323,25 +323,28 @@ Matter.random_reaction = function(matter, temperature){
 	// Exit if same compunds were selected
 	if (a != b){
 		var reaction = Matter.react(a, b, temperature);
-		console.log(reaction);
 		temperature = reaction.temperature;
-		return {
-			matter:matter,
-			temperature: temperature
-		};
-		
+        
+        // Add the products to the matter
+		for (var i = 0; i < reaction.products.length; i++){
+            // Add product to matter if it doesn't exist, else add to the count
+            var index = matter.indexOf(reaction.products[i]);
+            
+            if (index == -1) matter.push(reaction.products[i]);
+            else             matter[index].count += reaction.products[i].count;
+        }
+        
 		// Delete a or b if they have been depleted
-		if (reactions[i].a.count == 0 && reactions[i].a != newCompound) {
-			var index = matter.indexOf(reactions[i].a);
+		if (a.count == 0) {
+			var index = matter.indexOf(a);
 			if (index != -1) matter.splice(index, 1);
-			console.log('Splice a:');
-			console.log(reactions[i].a);
+			console.log('Splice a');
 		}
-		if (reactions[i].b.count == 0 && reactions[i].b != newCompound) {
-			var index = matter.indexOf(reactions[i].b);
+        
+		if (b.count == 0) {
+			var index = matter.indexOf(b);
 			if (index != -1) matter.splice(index, 1);
-			console.log('Splice b:');
-			console.log(reactions[i].b);
+			console.log('Splice b');
 		}
 	}
 	
@@ -379,6 +382,7 @@ Matter.react = function(a, b, temperature){
 	
 	//Check if reaction is sponaneus, which means it will happen
 	if (deltaG < 0){
+        console.log('Reaction!');
 		temperature -= deltaH * (newA.mass + newB.mass);
 		
 		// TODO: find most limited reactant
