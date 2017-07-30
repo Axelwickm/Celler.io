@@ -332,10 +332,14 @@ Matter.random_reaction = function(matter, temperature){
         // Add the products to the matter
 		for (var i = 0; i < reaction.products.length; i++){
             // Add product to matter if it doesn't exist, else add to the count
-            var index = matter.indexOf(reaction.products[i]);
+            var compound = matter.find(function(e){
+                return reaction.products[i].iform == e.iform;
+            });
             
-            if (index == -1) matter.push(reaction.products[i]);
-            else             matter[index].count += reaction.products[i].count;
+            if (compound)
+                compound.count += reaction.products[i].count;
+            else
+                matter.push(reaction.products[i]);
         }
         
 		// Delete a or b if they have been depleted
