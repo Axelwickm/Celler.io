@@ -302,6 +302,7 @@ var Player = function(client){
 
 
 /* Static Matter class which does all the chemistry */
+// TODO: Make class not static, properly calculate reaction count, properly calculate energy release on reaction level
 var Matter = {}
 // Representative letters for elements
 Matter.E_letters      = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'],
