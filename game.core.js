@@ -129,13 +129,17 @@ var game_core = function(game_instance){
 		console.log(this.gs.cells[0].matter);
 		var temperature = 5;
 		console.log('\nChemistry tests:');
-		for (var i = 0; i < 10; i++){
+		for (var i = 0; i < 100; i++){
 			var r = Matter.random_reaction(this.gs.cells[0].matter, temperature);
 			this.gs.cells[0].matter = r.matter;
 			temperature = r.temperature;
 			//console.log('\nReaction '+i);
 			//console.log(this.gs.cells[0].matter);
 		}
+        
+        for (var i = 0; i < this.gs.cells[0].matter.length; i++){
+            console.log(this.gs.cells[0].matter[i].count+'  '+Matter.iform_to_text(this.gs.cells[0].matter[i].iform));
+        }
 		console.log('Chemistry tests over.\n')
 	}
 
@@ -338,13 +342,11 @@ Matter.random_reaction = function(matter, temperature){
 		if (a.count == 0) {
 			var index = matter.indexOf(a);
 			if (index != -1) matter.splice(index, 1);
-			console.log('Splice a');
 		}
         
 		if (b.count == 0) {
 			var index = matter.indexOf(b);
 			if (index != -1) matter.splice(index, 1);
-			console.log('Splice b');
 		}
 	}
 	
@@ -378,11 +380,10 @@ Matter.react = function(a, b, temperature){
 	// Calculate deltaH
 	var deltaH =  a.enthalpy + b.enthalpy - newA.enthalpy - newB.enthalpy;
 	var deltaG = deltaH;
-	console.log('Gibbs free energy: '+deltaG);
+	//console.log('Gibbs free energy: '+deltaG);
 	
 	//Check if reaction is sponaneus, which means it will happen
 	if (deltaG < 0){
-        console.log('Reaction!');
 		temperature -= deltaH * (newA.mass + newB.mass);
 		
 		// TODO: find most limited reactant
