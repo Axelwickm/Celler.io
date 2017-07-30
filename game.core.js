@@ -477,6 +477,14 @@ Matter.create = function(iform, count){
     }
 }
 
+Matter.getMass = function(matter){
+    var m = 0;
+    matter.forEach(function(e){
+        m += e.mass;
+    });
+    return m;
+}
+
 Matter.sortIform = function(iform){
     var c = [];
     for (var i = 0; i < iform.length; i+=2){
@@ -555,7 +563,8 @@ var Cell = function(gamecore, options){
     
     gamecore.physics.addBody(this.body);
     
-    this.matter = [Matter.create('1,0,5,7', 2), Matter.create('2,5,6,20', 6)]; // iform 1 of index 0 ( α )
+    this.matter = [Matter.create('1,0,5,7', 2), Matter.create('4,5,7,20', 3), 
+        Matter.create('4,13,6,2,6,5', 6), Matter.create('5,7,4,22', 2)]; // iform 1 of index 0 ( α )
 }
 
 
