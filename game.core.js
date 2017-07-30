@@ -372,7 +372,18 @@ Matter.react = function(a, b, temperature){
 		// Move set from a.iform to b.iform
 		var iformarray = a.iform.split(',');
 		var n = Math.floor( Math.random() * iformarray.length/2) * 2;
-		biform = b.iform.concat(','+iformarray[n]+','+iformarray[n+1]);
+        var elementInB = -1;
+        for (var j = 0; j<biform.length; j+=2){
+            if (biform[j+1] == iformarray[n+1]){
+                elementInB = j;
+                break;
+            } 
+        }
+        //console.log(elementInB);
+        if (elementInB == -1)
+            biform = biform.concat(','+iformarray[n]+','+iformarray[n+1]);
+        else
+            biform = biform.substr(0, elementInB)+parseInt(biform[elementInB])+parseInt(iformarray[n])+biform.substr(elementInB+1);
 		iformarray.splice(n, 2);
 		aiform = iformarray.join();
 	}
