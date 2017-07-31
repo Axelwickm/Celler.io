@@ -128,8 +128,10 @@ var game_core = function(game_instance){
         };
         console.log(this.gs.cells[0].matter);
         console.log('\nChemistry tests:');
+        
         for (var i = 0; i < 10000; i++){
             this.gs.cells[0].matter.random_reaction();
+            //console.log(i+', '+this.gs.cells[0].matter.temperature);
             //console.log('\nReaction '+i);
             //console.log(this.gs.cells[0].matter);
         }
@@ -296,16 +298,16 @@ var Player = function(client){
 
 
 /* Matter class which does all the chemistry, mass and temperature calculations */
-// TODO: Properly calculate reaction count, properly calculate energy release on reaction level
+// TODO: Properly calculate reaction count
 var Matter = function(compounds, temperature){
     this.matter = compounds || [];
     this.temperature = temperature || 0;
     this.mass = this.getMass();
 }
 // Representative letters for elements
-Matter.E_letters      = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'],
+Matter.E_letters = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'],
 // Number of possible bonds for elements
-Matter.E_bonds        = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
+Matter.E_bonds   = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
 
 Matter.prototype.add = function(newCompound){
     // Push the new compund if not all of it has been consumed
@@ -381,7 +383,7 @@ Matter.react = function(a, b, temperature){
         // Choose which element to move
         var n = Math.floor( Math.random() * aiform.length/2) * 2;
         // Choose how much of it to move
-        var q =  Math.floor( Math.random() * aiform[n]);
+        var q = Math.floor( Math.random() * aiform[n]);
         if (q == 0) q = 1;
         
         // See if this element already exists in b
@@ -415,8 +417,9 @@ Matter.react = function(a, b, temperature){
     var newB = Matter.create(biform, b.count);
     
     // Calculate deltaH
-    var deltaH =  a.enthalpy + b.enthalpy - newA.enthalpy - newB.enthalpy;
-    var deltaG = deltaH;
+    var deltaH = a.enthalpy + b.enthalpy - newA.enthalpy - newB.enthalpy;
+    var deltaS = newA.entropy + newB.entropy - a.entropy - b.entropy;
+    var deltaG = deltaH - temperature*deltaS;
     
     //Check if reaction is sponaneus, which means it will happen
     if (deltaG < 0){
@@ -429,8 +432,10 @@ Matter.react = function(a, b, temperature){
         b.count -= reactionCount;
         newA.count = reactionCount;
         newB.count = reactionCount;
-        products.push(newA);
-        products.push(newB);
+        if (newA.iform.length != 0)
+            products.push(newA);
+        if (newB.iform.length != 0)
+            products.push(newB);
         
         energy -= deltaH * reactionCount;
         
@@ -454,12 +459,15 @@ Matter.create = function(iform, count){
     
     var free_bonds = 0;
     var enthalpy = 0;
+    var entropy = 0;
     var mass = 0;
     
     for (var i = 0; i < iform.length ; i+=2){
         free_bonds += Matter.E_bonds[iform[i+1]]*iform[i];
         mass += iform[i+1]*iform[i]+1;
+        entropy += iform[i];
     }
+    entropy += mass;
     
     for (var i = 0; i < iform.length ; i+=2){
         enthalpy +=
@@ -473,6 +481,7 @@ Matter.create = function(iform, count){
         count:count,
         free_bonds:free_bonds,
         enthalpy:enthalpy,
+        entropy:entropy,
         mass:mass
     }
 }
