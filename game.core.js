@@ -126,6 +126,21 @@ var game_core = function(game_instance){
         for (var i = 0; i<100; i++){
             this.gs.add(new Cell(this, {p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],p_vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
         };
+      
+        console.log(this.gs.cells[0].matter);
+        console.log('\nChemistry tests:');
+        
+        for (var i = 0; i < 10000; i++){
+            this.gs.cells[0].matter.random_reaction();
+            //console.log(i+', '+this.gs.cells[0].matter.temperature);
+            //console.log('\nReaction '+i);
+            //console.log(this.gs.cells[0].matter);
+        }
+        
+        this.gs.cells[0].matter.sortAlphabetically();
+        this.gs.cells[0].matter.log();
+        
+        console.log('Chemistry tests over.\n')
     }
 
 };
@@ -283,6 +298,271 @@ var Player = function(client){
 */
 
 
+/* Matter class which does all the chemistry, mass and temperature calculations */
+// TODO: Properly calculate reaction count
+var Matter = function(compounds, temperature){
+    this.matter = compounds || [];
+    this.temperature = temperature || 0;
+    this.updateMass();
+}
+// Representative letters for elements
+Matter.E_letters = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'],
+// Number of possible bonds for elements
+Matter.E_bonds   = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
+
+Matter.prototype.add = function(newCompound){
+    // Push the new compund if not all of it has been consumed
+    if (newCompound.count != 0) {
+        var compound = matter.find(function(e){
+            return (newCompound.length == e.iform.length) && newCompound.every(function(element, index) {
+                return element === e.iform[index]; 
+            });
+        });
+        
+        if (compound)
+            compound.count += newCompound.count;
+        else 
+            matter.push(newCompound);
+    }   
+    
+    this.updateMass();
+}
+
+Matter.prototype.random_reaction = function(){
+    // React the compunds, which decreases their count, while returning a list of the new formed compunds
+    var a = this.matter[Math.floor(Math.random()*this.matter.length)];
+    var b = this.matter[Math.floor(Math.random()*this.matter.length)];
+    
+    // Exit if same compunds were selected
+    if (a != b){
+        var reaction = Matter.react(a, b, this.temperature);
+        
+        // Update the temperature depending on the energy released
+        this.temperature += reaction.energy*(a.mass+b.mass)/(this.mass*10000);
+        
+        // Add the products to the matter
+        for (var i = 0; i < reaction.products.length; i++){
+            // Add product to matter if it doesn't exist, else add to the count
+            var product_iform = reaction.products[i].iform;
+            var compound = this.matter.find(function(e){
+                return (product_iform.length == e.iform.length) && product_iform.every(function(element, index) {
+                    return element === e.iform[index]; 
+                });
+            });
+            
+            if (compound)
+                compound.count += reaction.products[i].count;
+            else
+                this.matter.push(reaction.products[i]);
+        }
+        
+        // Delete a or b if they have been depleted
+        if (a.count == 0) {
+            var index = this.matter.indexOf(a);
+            if (index != -1) this.matter.splice(index, 1);
+        }
+        
+        if (b.count == 0) {
+            var index = this.matter.indexOf(b);
+            if (index != -1) this.matter.splice(index, 1);
+        }
+    }
+}
+
+Matter.react = function(a, b, temperature){
+    var products = [];
+    var energy = 0;
+    
+    // Randomly move elements from a -> b 
+    var changes = Math.ceil(Math.random() * (a.length-1) );
+
+    var aiform = a.iform.slice();
+    var biform = b.iform.slice();
+    for (var i = 0; i<changes; i++){
+        // Move set (amount, element) from a.iform to b.iform
+        
+        // Choose which element to move
+        var n = Math.floor( Math.random() * aiform.length/2) * 2;
+        // Choose how much of it to move
+        var q = Math.floor( Math.random() * aiform[n]);
+        if (q == 0) q = 1;
+        
+        // See if this element already exists in b
+        var elementInB = -1;
+        for (var j = 0; j<biform.length; j+=2){
+            if (biform[j+1] == aiform[n+1]){
+                elementInB = j;
+                break;
+            } 
+        }
+        
+        if (elementInB == -1){
+            // Add element to b
+            biform.push(q);
+            biform.push(aiform[n+1]);
+        }
+        else {
+            // Add quantity to element in b
+            biform[elementInB] += q;
+        }
+        
+        // Remove q of element from a
+        aiform[n] -= q;
+        // Remove element if it's below 0
+        if (aiform[n] <= 0)
+            aiform.splice(n, 2);
+    }
+    
+    // See if this reaction makes gibbs free energy < 0
+    var newA = Matter.create(aiform, a.count);
+    var newB = Matter.create(biform, b.count);
+    
+    // Calculate deltaH
+    var deltaH = a.enthalpy + b.enthalpy - newA.enthalpy - newB.enthalpy;
+    var deltaS = newA.entropy + newB.entropy - a.entropy - b.entropy;
+    var deltaG = deltaH - temperature*deltaS;
+    
+    //Check if reaction is sponaneus, which means it will happen
+    if (deltaG < 0){
+        // TODO: find most limited reactant
+        // This determines reaction rate
+        var reactionCount = Math.floor( Math.min(a.count, b.count) );
+        reactionCount = 1;
+        
+        a.count -= reactionCount;
+        b.count -= reactionCount;
+        newA.count = reactionCount;
+        newB.count = reactionCount;
+        if (newA.iform.length != 0)
+            products.push(newA);
+        if (newB.iform.length != 0)
+            products.push(newB);
+        
+        energy -= deltaH * reactionCount;
+        
+    }
+    
+
+    return {
+        products : products,
+        energy : energy
+    };
+}
+
+Matter.create = function(iform, count){
+    // if iform is a string it is turned into a numberarray
+    if (typeof iform === 'string'){
+        iform = iform.split(',');
+        iform.forEach(function(e, i){
+            iform[i] = parseInt(e);
+        });
+    }
+    
+    var free_bonds = 0;
+    var enthalpy = 0;
+    var entropy = 0;
+    var mass = 0;
+    
+    for (var i = 0; i < iform.length ; i+=2){
+        free_bonds += Matter.E_bonds[iform[i+1]]*iform[i];
+        mass += iform[i+1]*iform[i]+1;
+        entropy += iform[i];
+    }
+    entropy += mass;
+    
+    for (var i = 0; i < iform.length ; i+=2){
+        enthalpy +=
+            Math.abs(free_bonds - Matter.E_bonds[iform[i+1]])
+            * 0.666*Math.pow(iform[i], 1.5);
+    }
+
+    return {
+        iform:iform,
+        length:iform.length/2,
+        count:count,
+        free_bonds:free_bonds,
+        enthalpy:enthalpy,
+        entropy:entropy,
+        mass:mass
+    }
+}
+
+Matter.prototype.updateMass = function(){
+    this.mass = 0;
+    this.matter.forEach(function(e){
+        this.mass += e.mass;
+    });
+    return this.mass;
+}
+
+Matter.sortIform = function(iform){
+    var c = [];
+    for (var i = 0; i < iform.length; i+=2){
+        c.push({
+            e: iform[i+1],
+            c: iform[i]
+        });
+    };
+    
+    c.sort(function(a, b){
+        return b.e < a.e;
+    });
+    
+    iform = [];
+    c.forEach(function(e){
+        iform.push(e.c);
+        iform.push(e.e);
+    });
+    return iform;
+}
+
+Matter.prototype.sortByMass = function() {
+    // Sort iforms
+    for (var i = 0; i < this.matter.length; i++){
+        Matter.sortIform(this.matter[i].iform);
+    }
+    
+    // Sort by mass
+    return this.matter.sort(function(a, b){
+        return a.count*a.mass < b.count*b.mass;
+    });
+}
+
+Matter.prototype.sortAlphabetically = function(){
+    // Sort iforms
+    for (var i = 0; i < this.matter.length; i++){
+        this.matter[i].iform = Matter.sortIform(this.matter[i].iform);
+    }
+    
+    // Sort matter depending on iform
+    this.matter.sort(function(a, b){
+        for (var i = 0; i < Math.max(a.iform.length, b.iform.length); i += 2){
+            if (!a.iform[i+1] && b.iform[i+1]) return false;
+            if (!b.iform[i+1] && a.iform[i+1]) return true;
+            if ( a.iform[i+1] != b.iform[i+1]) return a.iform[i+1] < b.iform[i+1];
+        }
+        return b.mass < a.mass;
+    });
+}
+
+Matter.prototype.log = function(){
+    for (var i = 0; i < this.matter.length; i++){
+        console.log(this.matter[i].count+'  '+Matter.iform_to_text(this.matter[i].iform));
+    }
+}
+
+Matter.iform_to_text = function(iform){
+    var tform = '';
+    for (var c in iform){
+        if (c%2 == 1)
+            tform = tform.concat( this.E_letters[iform[c]] );
+        else
+            tform = tform.concat( (c == 0 ? '':'_' ) + iform[c]);
+    }
+    return tform;
+}
+
+
 var Cell = function(gamecore, options){
     this.type = options.type || 'cells';
     this.food = options.food || 5;
@@ -300,6 +580,10 @@ var Cell = function(gamecore, options){
     this.body.addShape(circleShape);
     
     gamecore.physics.addBody(this.body);
+  
+    this.matter = new Matter(
+        [Matter.create('1,0,5,7', 2), Matter.create('4,5,7,20', 3), Matter.create('4,13,6,2,6,5', 6), Matter.create('5,7,4,22', 2)]
+    ); // iform 1 of index 0 ( α )
 }
 
 
