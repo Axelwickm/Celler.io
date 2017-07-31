@@ -116,22 +116,22 @@ var game_core = function(game_instance){
         //Create debug gui
         this.client_create_debug_gui();
         
-    } else { //if !server
-
+    }
+    else {
         this.server_time = 0;
         this.server_updates = 0;
         
         // Add some test cells to the gamestate
     
         for (var i = 0; i<100; i++){
-            var random_matter = [
+            var random_compounds = [
                 Matter.create('4,2,6,12')
             ];
             
             this.gs.add(new Cell(this, {
                 p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],
                 p_vel:[500*Math.random()-250,500*Math.random()-250],
-                matter:random_matter
+                compounds:random_compounds
             }));
         };
     }
@@ -484,9 +484,9 @@ Matter.create = function(iform, count){
 
 Matter.prototype.updateMass = function(){
     this.mass = 0;
-    this.matter.forEach(function(e){
-        this.mass += e.mass;
-    });
+    for (var i = 0; i<this.matter.length; i++){
+        this.mass += this.matter[i].mass;
+    }
     return this.mass;
 }
 
@@ -561,8 +561,7 @@ Matter.iform_to_text = function(iform){
 var Cell = function(gamecore, options){
     this.type = options.type || 'cells';
     this.color = options.color || '#ff0000';
-    this.matter = new Matter(options.matter);
-    this.matter.log();
+    this.matter = options.matter || new Matter(options.compounds);
     
     this.body = new p2.Body({
         mass: this.matter.mass,
@@ -572,7 +571,7 @@ var Cell = function(gamecore, options){
         angularVelocity: options.p_angvel || 0,
         damping:0.00
     });
-        
+    
     var circleShape = new p2.Circle({ radius: 8*Math.sqrt(this.matter.mass/Math.PI) });
     this.body.addShape(circleShape);
     
