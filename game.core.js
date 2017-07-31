@@ -570,7 +570,12 @@ Matter.iform_to_text = function(iform){
 var Cell = function(gamecore, options){
     this.type = options.type || 'cells';
     this.color = options.color || '#ff0000';
-    this.matter = options.matter || new Matter(options.compounds);
+    
+    if (options.matter)
+        this.matter = new Matter(options.matter.matter);
+    else 
+        this.matter = new Matter(options.compounds);
+
     
     this.body = new p2.Body({
         mass: this.matter.mass/100,
