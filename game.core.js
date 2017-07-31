@@ -127,14 +127,9 @@ var game_core = function(game_instance){
             this.gs.add(new Cell(this, {p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],p_vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
         };
         console.log(this.gs.cells[0].matter);
-        var temperature = 5;
-        var mass = Matter.getMass(this.gs.cells[0].matter);
         console.log('\nChemistry tests:');
-        console.log('Mass: '+mass);
         for (var i = 0; i < 10000; i++){
-            var r = Matter.random_reaction(this.gs.cells[0].matter, mass, temperature);
-            this.gs.cells[0].matter = r.matter;
-            temperature = r.temperature;
+            this.gs.cells[0].matter.random_reaction();
             //console.log('\nReaction '+i);
             //console.log(this.gs.cells[0].matter);
         }
@@ -303,15 +298,19 @@ var Player = function(client){
 */
 
 
-/* Static Matter class which does all the chemistry */
-// TODO: Make class not static, properly calculate reaction count, properly calculate energy release on reaction level
-var Matter = {}
+/* Matter class which does all the chemistry, mass and temperature calculations */
+// TODO: Properly calculate reaction count, properly calculate energy release on reaction level
+var Matter = function(compounds, temperature){
+    this.matter = compounds || [];
+    this.temperature = temperature || 0;
+    this.mass = this.getMass();
+}
 // Representative letters for elements
 Matter.E_letters      = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'],
 // Number of possible bonds for elements
 Matter.E_bonds        = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 , 4 ],
 
-Matter.add = function(matter, newCompound){
+Matter.prototype.add = function(newCompound){
     // Push the new compund if not all of it has been consumed
     if (newCompound.count != 0) {
         var compound = matter.find(function(e){
@@ -325,26 +324,27 @@ Matter.add = function(matter, newCompound){
         else 
             matter.push(newCompound);
     }   
-    return matter;
+    
+    this.mass = this.getMass();
 }
 
-Matter.random_reaction = function(matter, mass, temperature){
+Matter.prototype.random_reaction = function(){
     // React the compunds, which decreases their count, while returning a list of the new formed compunds
-    var a = matter[Math.floor(Math.random()*matter.length)];
-    var b = matter[Math.floor(Math.random()*matter.length)];
+    var a = this.matter[Math.floor(Math.random()*this.matter.length)];
+    var b = this.matter[Math.floor(Math.random()*this.matter.length)];
     
     // Exit if same compunds were selected
     if (a != b){
-        var reaction = Matter.react(a, b, temperature);
+        var reaction = Matter.react(a, b, this.temperature);
         
         // Update the temperature depending on the energy released
-        temperature += reaction.energy*(a.mass+b.mass)/(mass*10000);
+        this.temperature += reaction.energy*(a.mass+b.mass)/(this.mass*10000);
         
         // Add the products to the matter
         for (var i = 0; i < reaction.products.length; i++){
             // Add product to matter if it doesn't exist, else add to the count
             var product_iform = reaction.products[i].iform;
-            var compound = matter.find(function(e){
+            var compound = this.matter.find(function(e){
                 return (product_iform.length == e.iform.length) && product_iform.every(function(element, index) {
                     return element === e.iform[index]; 
                 });
@@ -353,25 +353,20 @@ Matter.random_reaction = function(matter, mass, temperature){
             if (compound)
                 compound.count += reaction.products[i].count;
             else
-                matter.push(reaction.products[i]);
+                this.matter.push(reaction.products[i]);
         }
         
         // Delete a or b if they have been depleted
         if (a.count == 0) {
-            var index = matter.indexOf(a);
-            if (index != -1) matter.splice(index, 1);
+            var index = this.matter.indexOf(a);
+            if (index != -1) this.matter.splice(index, 1);
         }
         
         if (b.count == 0) {
-            var index = matter.indexOf(b);
-            if (index != -1) matter.splice(index, 1);
+            var index = this.matter.indexOf(b);
+            if (index != -1) this.matter.splice(index, 1);
         }
     }
-    
-    return {
-        matter : matter,
-        temperature : temperature
-    };
 }
 
 Matter.react = function(a, b, temperature){
@@ -485,11 +480,12 @@ Matter.create = function(iform, count){
     }
 }
 
-Matter.getMass = function(matter){
+Matter.prototype.getMass = function(){
     var m = 0;
-    matter.forEach(function(e){
+    this.matter.forEach(function(e){
         m += e.mass;
     });
+    this.mass = m;
     return m;
 }
 
@@ -513,26 +509,26 @@ Matter.sortIform = function(iform){
     });
 }
 
-Matter.sortByMass = function(matter) {
+Matter.prototype.sortByMass = function() {
     // Sort iforms
-    for (var i = 0; i < matter.length; i++){
-        Matter.sortIform(matter[i].iform);
+    for (var i = 0; i < this.matter.length; i++){
+        Matter.sortIform(this.matter[i].iform);
     }
     
     // Sort by mass
-    return matter.sort(function(a, b){
+    return this.matter.sort(function(a, b){
         return a.count*a.mass < b.count*b.mass;
     });
 }
 
-Matter.sortAlphabetically = function(matter){
+Matter.prototype.sortAlphabetically = function(){
     // Sort iforms
-    for (var i = 0; i < matter.length; i++){
-        Matter.sortIform(matter[i].iform);
+    for (var i = 0; i < this.matter.length; i++){
+        Matter.sortIform(this.matter[i].iform);
     }
     
     // Sort matter depending on iform
-    return matter.sort(function(a, b){
+    return this.matter.sort(function(a, b){
         for (var i = 0; i < Math.max(a.iform.length, b.iform.length); i += 2){
             if (!a.iform[i+1]) return false;
             if (!b.iform[i+1]) return true;
@@ -571,8 +567,9 @@ var Cell = function(gamecore, options){
     
     gamecore.physics.addBody(this.body);
     
-    this.matter = [Matter.create('1,0,5,7', 2), Matter.create('4,5,7,20', 3), 
-        Matter.create('4,13,6,2,6,5', 6), Matter.create('5,7,4,22', 2)]; // iform 1 of index 0 ( α )
+    this.matter = new Matter(
+        [Matter.create('1,0,5,7', 2), Matter.create('4,5,7,20', 3), Matter.create('4,13,6,2,6,5', 6), Matter.create('5,7,4,22', 2)]
+    ); // iform 1 of index 0 ( α )
 }
 
 
