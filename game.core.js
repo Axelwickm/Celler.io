@@ -128,9 +128,11 @@ var game_core = function(game_instance){
         };
         console.log(this.gs.cells[0].matter);
         var temperature = 5;
+        var mass = Matter.getMass(this.gs.cells[0].matter);
         console.log('\nChemistry tests:');
-        for (var i = 0; i < 1000; i++){
-            var r = Matter.random_reaction(this.gs.cells[0].matter, temperature);
+        console.log('Mass: '+mass);
+        for (var i = 0; i < 10000; i++){
+            var r = Matter.random_reaction(this.gs.cells[0].matter, mass, temperature);
             this.gs.cells[0].matter = r.matter;
             temperature = r.temperature;
             //console.log('\nReaction '+i);
@@ -326,7 +328,7 @@ Matter.add = function(matter, newCompound){
     return matter;
 }
 
-Matter.random_reaction = function(matter, temperature){
+Matter.random_reaction = function(matter, mass, temperature){
     // React the compunds, which decreases their count, while returning a list of the new formed compunds
     var a = matter[Math.floor(Math.random()*matter.length)];
     var b = matter[Math.floor(Math.random()*matter.length)];
@@ -334,7 +336,9 @@ Matter.random_reaction = function(matter, temperature){
     // Exit if same compunds were selected
     if (a != b){
         var reaction = Matter.react(a, b, temperature);
-        temperature = reaction.temperature;
+        
+        // Update the temperature depending on the energy released
+        temperature += reaction.energy*(a.mass+b.mass)/(mass*10000);
         
         // Add the products to the matter
         for (var i = 0; i < reaction.products.length; i++){
@@ -372,6 +376,7 @@ Matter.random_reaction = function(matter, temperature){
 
 Matter.react = function(a, b, temperature){
     var products = [];
+    var energy = 0;
     
     // Randomly move elements from a -> b 
     var changes = Math.ceil(Math.random() * (a.length-1) );
@@ -420,12 +425,9 @@ Matter.react = function(a, b, temperature){
     // Calculate deltaH
     var deltaH =  a.enthalpy + b.enthalpy - newA.enthalpy - newB.enthalpy;
     var deltaG = deltaH;
-    //console.log('Gibbs free energy: '+deltaG);
     
     //Check if reaction is sponaneus, which means it will happen
     if (deltaG < 0){
-        temperature -= deltaH * (newA.mass + newB.mass);
-        
         // TODO: find most limited reactant
         // This determines reaction rate
         var reactionCount = Math.floor( Math.min(a.count, b.count) );
@@ -438,12 +440,14 @@ Matter.react = function(a, b, temperature){
         products.push(newA);
         products.push(newB);
         
+        energy -= deltaH * reactionCount;
+        
     }
     
 
     return {
         products : products,
-        temperature : temperature
+        energy : energy
     };
 }
 
