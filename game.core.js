@@ -302,7 +302,7 @@ var Player = function(client){
 var Matter = function(compounds, temperature){
     this.matter = compounds || [];
     this.temperature = temperature || 0;
-    this.mass = this.getMass();
+    this.updateMass();
 }
 // Representative letters for elements
 Matter.E_letters = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'],
@@ -324,7 +324,7 @@ Matter.prototype.add = function(newCompound){
             matter.push(newCompound);
     }   
     
-    this.mass = this.getMass();
+    this.updateMass();
 }
 
 Matter.prototype.random_reaction = function(){
@@ -486,13 +486,12 @@ Matter.create = function(iform, count){
     }
 }
 
-Matter.prototype.getMass = function(){
-    var m = 0;
+Matter.prototype.updateMass = function(){
+    this.mass = 0;
     this.matter.forEach(function(e){
-        m += e.mass;
+        this.mass += e.mass;
     });
-    this.mass = m;
-    return m;
+    return this.mass;
 }
 
 Matter.sortIform = function(iform){
