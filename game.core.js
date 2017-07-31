@@ -124,23 +124,16 @@ var game_core = function(game_instance){
         // Add some test cells to the gamestate
     
         for (var i = 0; i<100; i++){
-            this.gs.add(new Cell(this, {p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],p_vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
+            var random_matter = [
+                Matter.create('4,2,6,12')
+            ];
+            
+            this.gs.add(new Cell(this, {
+                p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],
+                p_vel:[500*Math.random()-250,500*Math.random()-250],
+                matter:random_matter
+            }));
         };
-      
-        console.log(this.gs.cells[0].matter);
-        console.log('\nChemistry tests:');
-        
-        for (var i = 0; i < 10000; i++){
-            this.gs.cells[0].matter.random_reaction();
-            //console.log(i+', '+this.gs.cells[0].matter.temperature);
-            //console.log('\nReaction '+i);
-            //console.log(this.gs.cells[0].matter);
-        }
-        
-        this.gs.cells[0].matter.sortAlphabetically();
-        this.gs.cells[0].matter.log();
-        
-        console.log('Chemistry tests over.\n')
     }
 
 };
@@ -450,6 +443,8 @@ Matter.react = function(a, b, temperature){
 }
 
 Matter.create = function(iform, count){
+    count = count || 1;
+    
     // if iform is a string it is turned into a numberarray
     if (typeof iform === 'string'){
         iform = iform.split(',');
@@ -565,10 +560,12 @@ Matter.iform_to_text = function(iform){
 
 var Cell = function(gamecore, options){
     this.type = options.type || 'cells';
-    this.food = options.food || 5;
     this.color = options.color || '#ff0000';
+    this.matter = new Matter(options.matter);
+    this.matter.log();
+    
     this.body = new p2.Body({
-        mass: this.food,
+        mass: this.matter.mass,
         position: options.p_pos,
         angle: options.p_angle || 0,
         velocity: options.p_vel || [0,0],
@@ -576,14 +573,10 @@ var Cell = function(gamecore, options){
         damping:0.00
     });
         
-    var circleShape = new p2.Circle({ radius: 8*Math.sqrt(this.food/Math.PI) });
+    var circleShape = new p2.Circle({ radius: 8*Math.sqrt(this.matter.mass/Math.PI) });
     this.body.addShape(circleShape);
     
     gamecore.physics.addBody(this.body);
-  
-    this.matter = new Matter(
-        [Matter.create('1,0,5,7', 2), Matter.create('4,5,7,20', 3), Matter.create('4,13,6,2,6,5', 6), Matter.create('5,7,4,22', 2)]
-    ); // iform 1 of index 0 ( α )
 }
 
 
@@ -687,8 +680,6 @@ game_core.prototype.server_update_physics = function() {
         this.gs.erase(this.gs.cells[2]);
         this.gs.erase(this.gs.cells[4]);
     }
-
-        //this.gs.add(new Cell(this, {pos:[this.world.width*Math.random(),this.world.height*Math.random()],vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
 };
 
 //Makes sure things run smoothly and notifies clients of changes
