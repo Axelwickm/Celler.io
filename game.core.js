@@ -126,6 +126,7 @@ var game_core = function(game_instance){
         for (var i = 0; i<100; i++){
             this.gs.add(new Cell(this, {p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],p_vel:[500*Math.random()-250,500*Math.random()-250], food:20*Math.random()}));
         };
+      
         console.log(this.gs.cells[0].matter);
         console.log('\nChemistry tests:');
         
@@ -579,7 +580,7 @@ var Cell = function(gamecore, options){
     this.body.addShape(circleShape);
     
     gamecore.physics.addBody(this.body);
-    
+  
     this.matter = new Matter(
         [Matter.create('1,0,5,7', 2), Matter.create('4,5,7,20', 3), Matter.create('4,13,6,2,6,5', 6), Matter.create('5,7,4,22', 2)]
     ); // iform 1 of index 0 ( α )
