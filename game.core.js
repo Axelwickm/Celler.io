@@ -124,9 +124,18 @@ var game_core = function(game_instance){
         // Add some test cells to the gamestate
     
         for (var i = 0; i<100; i++){
-            var random_compounds = [
-                Matter.create('4,2,6,12')
-            ];
+            var random_compounds = [];
+            var compound_count = Math.random()*6+1;
+            for (var j = 0; j<compound_count; j++){
+                var iform = [];
+                var iform_count = Math.random()*3+1;
+                for (var n = 0; n<iform_count; n++){
+                    iform.push(Math.floor(Math.random()*4+1));
+                    iform.push(Math.floor(Math.random()*24));
+                }
+                random_compounds.push(Matter.create(iform, Math.floor(Math.random()*10+1)));
+                
+            }
             
             this.gs.add(new Cell(this, {
                 p_pos:[this.world.width*Math.random(),this.world.height*Math.random()],
