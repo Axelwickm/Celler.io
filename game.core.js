@@ -134,11 +134,8 @@ var game_core = function(game_instance){
             //console.log(this.gs.cells[0].matter);
         }
         
-        this.gs.cells[0].matter = Matter.sortAlphabetically(this.gs.cells[0].matter);
-        
-        for (var i = 0; i < this.gs.cells[0].matter.length; i++){
-            console.log(this.gs.cells[0].matter[i].count+'  '+Matter.iform_to_text(this.gs.cells[0].matter[i].iform));
-        }
+        this.gs.cells[0].matter.sortAlphabetically();
+        this.gs.cells[0].matter.log();
         
         console.log('Chemistry tests over.\n')
     }
@@ -535,6 +532,12 @@ Matter.prototype.sortAlphabetically = function(){
             if (a.iform[i+1] != b.iform[i+1]) return a.iform[i+1] < b.iform[i+1];
         }
     });
+}
+
+Matter.prototype.log = function(){
+    for (var i = 0; i < this.matter.length; i++){
+        console.log(this.matter[i].count+'  '+Matter.iform_to_text(this.matter[i].iform));
+    }
 }
 
 Matter.iform_to_text = function(iform){
