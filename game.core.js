@@ -573,7 +573,7 @@ var Cell = function(gamecore, options){
     this.matter = options.matter || new Matter(options.compounds);
     
     this.body = new p2.Body({
-        mass: this.matter.mass,
+        mass: this.matter.mass/100,
         position: options.p_pos,
         angle: options.p_angle || 0,
         velocity: options.p_vel || [0,0],
@@ -581,7 +581,7 @@ var Cell = function(gamecore, options){
         damping:0.00
     });
     
-    var circleShape = new p2.Circle({ radius: 8*Math.sqrt(this.matter.mass/Math.PI) });
+    var circleShape = new p2.Circle({ radius: Math.sqrt(this.matter.mass/Math.PI) });
     this.body.addShape(circleShape);
     
     gamecore.physics.addBody(this.body);
