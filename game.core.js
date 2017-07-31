@@ -496,7 +496,7 @@ Matter.sortIform = function(iform){
     };
     
     c.sort(function(a, b){
-        return a.e < b.e;
+        return b.e < a.e;
     });
     
     iform = [];
@@ -504,6 +504,7 @@ Matter.sortIform = function(iform){
         iform.push(e.c);
         iform.push(e.e);
     });
+    return iform;
 }
 
 Matter.prototype.sortByMass = function() {
@@ -521,16 +522,17 @@ Matter.prototype.sortByMass = function() {
 Matter.prototype.sortAlphabetically = function(){
     // Sort iforms
     for (var i = 0; i < this.matter.length; i++){
-        Matter.sortIform(this.matter[i].iform);
+        this.matter[i].iform = Matter.sortIform(this.matter[i].iform);
     }
     
     // Sort matter depending on iform
-    return this.matter.sort(function(a, b){
+    this.matter.sort(function(a, b){
         for (var i = 0; i < Math.max(a.iform.length, b.iform.length); i += 2){
-            if (!a.iform[i+1]) return false;
-            if (!b.iform[i+1]) return true;
-            if (a.iform[i+1] != b.iform[i+1]) return a.iform[i+1] < b.iform[i+1];
+            if (!a.iform[i+1] && b.iform[i+1]) return false;
+            if (!b.iform[i+1] && a.iform[i+1]) return true;
+            if ( a.iform[i+1] != b.iform[i+1]) return a.iform[i+1] < b.iform[i+1];
         }
+        return b.mass < a.mass;
     });
 }
 
