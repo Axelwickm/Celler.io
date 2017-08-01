@@ -446,6 +446,9 @@ Matter.react = function(a, b, temperature){
         
         energy -= deltaH * reactionCount;
         
+        newA.iform = Matter.sortIform(newA.iform);
+        newB.iform = Matter.sortIform(newB.iform);
+        
     }
     
 
@@ -465,6 +468,7 @@ Matter.create = function(iform, count){
             iform[i] = parseInt(e);
         });
     }
+    iform = Matter.sortIform(iform);
     
     var free_bonds = 0;
     var enthalpy = 0;
