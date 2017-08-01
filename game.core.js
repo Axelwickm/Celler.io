@@ -186,7 +186,8 @@ game_state.prototype.erase = function(obj){
 }
 
 game_state.prototype.edit = function(obj, p, v){
-    obj[p] = v;
+    if (v)
+        obj[p] = v;
     // 'add' takes priority over 'edit'
     if (this.server && (obj.update.e.length == 0 || obj.update.e == 'edit')){
         obj.update.e = 'edit';
@@ -195,7 +196,7 @@ game_state.prototype.edit = function(obj, p, v){
 }
 
 game_state.prototype.server_get_changes = function(simulation_status, all_data){ 
-    var blacklist = ['update', 'body', 'instance'];
+    var blacklist = ['update', 'body', 'instance', 'gs'];
     var changes = [];
     
     // Loop through both cells and players
@@ -228,6 +229,8 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
             change.p_ang = obj.body.angle;
             change.p_vel = obj.body.velocity;
             change.p_angvel = obj.body.angularVelocity;
+            
+            change.matter = obj.matter;
         }
         //Push the type of action made
         change.e = obj.update.e;
@@ -493,14 +496,17 @@ Matter.create = function(iform, count){
 
 Matter.prototype.updatePhysicalProperties = function(){
     this.mass = 0;
+    this.averageEnthalpy = 0;
     this.averageFreeBonds = 0;
     for (var i = 0; i<this.matter.length; i++){
         this.mass += this.matter[i].mass;
+        this.averageEnthalpy += this.matter[i].enthalpy;
         this.averageFreeBonds += this.matter[i].free_bonds;
     }
     this.averageFreeBonds /= this.matter.length;
+    this.averageEnthalpy /= this.matter.length;
     
-    var color = 'rgb('+(this.averageFreeBonds*3+120)+',20,40)';
+    var color = 'hsl(350, '+(this.averageFreeBonds*10+50)+'%, '+(this.averageEnthalpy*0.7)+'%)';
     
     return {
         mass:this.mass,
@@ -578,6 +584,7 @@ Matter.iform_to_text = function(iform){
 
 var Cell = function(gamecore, options){
     this.type = options.type || 'cells';
+    this.gs = gamecore.gs;
     
     if (options.matter)
         this.matter = new Matter(options.matter.matter);
@@ -602,6 +609,14 @@ var Cell = function(gamecore, options){
     gamecore.physics.addBody(this.body);
 }
 
+Cell.prototype.update = function(isServer){
+    if (Math.random < 0.02 && isServer){
+        this.matter.random_reaction();
+        var physicalProperies = this.matter.updatePhysicalProperties();
+        this.gs.edit(this, 'matter');
+        this.gs.edit(this, 'color', physicalProperies.color);
+    }
+}
 
 Cell.prototype.draw = function(){
     game.ctx.fillStyle = this.color;
@@ -655,6 +670,8 @@ game_core.prototype.update = function(t) {
 
         //Store the last frame time
     this.lastframetime = t;
+    if (this.gs.cells.length != 0 && false)
+        console.log(this.gs.cells[0].matter.mass);
 
         //Update the game specifics
     if(this.server) {
@@ -697,12 +714,7 @@ game_core.prototype.update_physics = function() {
 
     //Updated at 15ms , simulates the world state
 game_core.prototype.server_update_physics = function() {
-    if (this.server_time>5 && this.gs.cells[0].color != '#00ff00'){
-        this.gs.edit(this.gs.cells[0], 'color','#00ff00');
-        this.gs.erase(this.gs.cells[2]);
-        this.gs.erase(this.gs.cells[2]);
-        this.gs.erase(this.gs.cells[4]);
-    }
+    
 };
 
 //Makes sure things run smoothly and notifies clients of changes
