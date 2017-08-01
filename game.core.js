@@ -272,6 +272,7 @@ game_state.prototype.client_load_changes = function(data){
                         else if (prop == 'p_ang')    this.cells[change.update_id].body['angle'] = change[prop];
                         else if (prop == 'p_vel')    this.cells[change.update_id].body['velocity'] = change[prop];
                         else if (prop == 'p_angvel') this.cells[change.update_id].body['angularVelocity'] = change[prop];
+                        else if (prop == 'p_radius') this.cells[change.update_id].body.shapes[0].radius = change[prop];
                     }
                     else if (prop != 'e' ) this.cells[change.update_id][prop] = change[prop];
                 }
@@ -614,12 +615,15 @@ var Cell = function(gamecore, options){
     gamecore.physics.addBody(this.body);
 }
 
-Cell.prototype.update = function(isServer){
-    if (Math.random < 0.02 && isServer){
+Cell.prototype.updt = function(isServer){
+    if (Math.random() < 0.02 && isServer){
         this.matter.random_reaction();
         var physicalProperies = this.matter.updatePhysicalProperties();
         this.gs.edit(this, 'matter');
         this.gs.edit(this, 'color', physicalProperies.color);
+        this.gs.edit(this, 'p_mass', this.matter.mass);
+        this.body.shapes[0].radius = Math.sqrt(this.matter.mass/Math.PI);
+        this.gs.edit(this, 'p_radius', Math.sqrt(this.matter.mass/Math.PI));
     }
 }
 
@@ -671,7 +675,17 @@ game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x,
 game_core.prototype.update = function(t) {
     
         //Work out the delta time
-    this.dt = this.lastframetime ? ( (t - this.lastframetime)/1000.0).fixed() : 0.016;
+    this.dt = this.lastframetime ? ( (t - this.lastframetime)/1000.0).fixed() : 0.016
+    
+    if (this.gs.cells[0]){
+        console.log(this.gs.cells[0].matter.mass);
+        //this.gs.cells[0].matter.log();
+        //console.log('\n');
+    }
+    
+    for (var i = 0; i<this.gs.cells.length; i++){
+        this.gs.cells[i].updt(this.server);
+    }
 
         //Store the last frame time
     this.lastframetime = t;
