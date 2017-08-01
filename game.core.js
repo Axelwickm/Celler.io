@@ -97,6 +97,7 @@ var game_core = function(game_instance){
 
     //Client specific initialisation
     if(!this.server) {
+        this.selectedCell = -1;
 
         //Create a keyboard handler
         this.keyboard = new THREEx.KeyboardState();
@@ -808,11 +809,7 @@ game_core.prototype.client_click_cell = function(cellID){
         action:'click cell',
         cellID:cellID
     });
-    
-    if (this.gs.cells[cellID].color == '#ff0000')
-        this.gs.cells[cellID].color = '#00ff66';
-    else
-        this.gs.cells[cellID].color = '#ff0000';
+    this.selectedCell = cellID;
 };
 
 
@@ -837,6 +834,8 @@ game_core.prototype.client_update = function() {
 
     //Work out the fps average
     this.client_refresh_fps();
+    
+    if (this.selectedCell != -1 ) console.log(this.gs.cells[this.selectedCell].matter);
 
 };
 
