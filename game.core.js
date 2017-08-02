@@ -90,10 +90,10 @@ var game_core = function(game_instance){
     //as this happens at a fixed frequency
     this.create_physics_simulation();
     
-    this.gs = new game_state(this);
-
     //Start a fast paced timer for measuring time easier
     this.create_timer();
+    
+    this.gs = new game_state(this);
 
     //Client specific initialisation
     if(!this.server) {
@@ -104,9 +104,6 @@ var game_core = function(game_instance){
 
         //Create the default configuration settings
         this.client_create_configuration();
-        //A list of recent server updates we interpolate across
-        //This is the buffer that is the driving factor for our networking
-        this.server_updates = [];
 
         //Connect to the socket.io server!
         this.client_connect_to_server();
@@ -616,7 +613,7 @@ var Cell = function(gamecore, options){
 }
 
 Cell.prototype.updt = function(isServer){
-    if (Math.random() < 0.05*Math.sqrt(this.matter.temperature) && isServer){
+    if (isServer && Math.random() < 0.05*Math.sqrt(this.matter.temperature)){
         this.matter.random_reaction();
         var physicalProperies = this.matter.updatePhysicalProperties();
         this.gs.edit(this, 'matter');
@@ -981,9 +978,6 @@ game_core.prototype.client_create_configuration = function() {
     this.fps_avg = 0;                   //The current average fps displayed in the debug UI
     this.fps_avg_acc = 0;               //The accumulation of the last avgcount fps samples
 
-    this.lit = 0;
-    this.llt = new Date().getTime();
-    
     this.mouseX = 0;
     this.mouseY = 0;
     this.oldMouse = {x:0, y:0}
