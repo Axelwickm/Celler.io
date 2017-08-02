@@ -345,7 +345,7 @@ Matter.prototype.random_reaction = function(){
         var reaction = Matter.react(a, b, this.temperature);
         
         // Update the temperature depending on the energy released
-        this.temperature += reaction.energy*(a.mass+b.mass)/(this.mass*10000);
+        this.temperature += reaction.energy*(a.mass+b.mass)/(this.mass*100);
         
         // Add the products to the matter
         for (var i = 0; i < reaction.products.length; i++){
@@ -512,7 +512,7 @@ Matter.prototype.updatePhysicalProperties = function(){
     this.averageFreeBonds /= this.matter.length;
     this.averageEnthalpy /= this.matter.length;
     
-    var color = 'hsl(350, '+(this.averageFreeBonds*10+50)+'%, '+(this.averageEnthalpy*0.15+50)+'%)';
+    var color = 'hsl(350, '+(100-this.averageEnthalpy*.1+10)+'%, '+(this.temperature*.75+50)+'%)';
     
     return {
         mass:this.mass,
@@ -593,9 +593,9 @@ var Cell = function(gamecore, options){
     this.gs = gamecore.gs;
     
     if (options.matter)
-        this.matter = new Matter(options.matter.matter);
+        this.matter = new Matter(options.matter.matter, 1);
     else 
-        this.matter = new Matter(options.compounds);
+        this.matter = new Matter(options.compounds, 1);
 
     var physicalProperies = this.matter.updatePhysicalProperties();
     this.color = physicalProperies.color;
@@ -616,15 +616,16 @@ var Cell = function(gamecore, options){
 }
 
 Cell.prototype.updt = function(isServer){
-    if (Math.random() < 0.02 && isServer){
+    if (Math.random() < 0.05*Math.sqrt(this.matter.temperature) && isServer){
         this.matter.random_reaction();
         var physicalProperies = this.matter.updatePhysicalProperties();
         this.gs.edit(this, 'matter');
         this.gs.edit(this, 'color', physicalProperies.color);
-        this.gs.edit(this, 'p_mass', this.matter.mass);
+        this.gs.edit(this, 'p_mass', this.matter.mass/1000);
         this.body.shapes[0].radius = Math.sqrt(0.4*this.matter.mass/Math.PI);
         this.gs.edit(this, 'p_radius', this.body.shapes[0].radius);
     }
+    this.matter.temperature *= 0.9995;
 }
 
 Cell.prototype.draw = function(){
