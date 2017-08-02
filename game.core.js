@@ -478,7 +478,7 @@ Matter.create = function(iform, count){
     
     for (var i = 0; i < iform.length ; i+=2){
         free_bonds += Matter.E_bonds[iform[i+1]]*iform[i];
-        mass += iform[i+1]*iform[i]+1;
+        mass += (iform[i+1]+1)*iform[i];
         entropy += iform[i];
     }
     entropy += mass;
@@ -505,14 +505,14 @@ Matter.prototype.updatePhysicalProperties = function(){
     this.averageEnthalpy = 0;
     this.averageFreeBonds = 0;
     for (var i = 0; i<this.matter.length; i++){
-        this.mass += this.matter[i].mass;
+        this.mass += this.matter[i].mass*this.matter[i].count;
         this.averageEnthalpy += this.matter[i].enthalpy;
         this.averageFreeBonds += this.matter[i].free_bonds;
     }
     this.averageFreeBonds /= this.matter.length;
     this.averageEnthalpy /= this.matter.length;
     
-    var color = 'hsl(350, '+(this.averageFreeBonds*10+50)+'%, '+(this.averageEnthalpy*0.7)+'%)';
+    var color = 'hsl(350, '+(this.averageFreeBonds*10+50)+'%, '+(this.averageEnthalpy*0.15+50)+'%)';
     
     return {
         mass:this.mass,
@@ -601,7 +601,7 @@ var Cell = function(gamecore, options){
     this.color = physicalProperies.color;
     
     this.body = new p2.Body({
-        mass: this.matter.mass/100,
+        mass: this.matter.mass/1000,
         position: options.p_pos,
         angle: options.p_angle || 0,
         velocity: options.p_vel || [0,0],
@@ -609,7 +609,7 @@ var Cell = function(gamecore, options){
         damping:0.00
     });
     
-    var circleShape = new p2.Circle({ radius: Math.sqrt(this.matter.mass/Math.PI) });
+    var circleShape = new p2.Circle({ radius: Math.sqrt(0.4*this.matter.mass/Math.PI) });
     this.body.addShape(circleShape);
     
     gamecore.physics.addBody(this.body);
@@ -622,8 +622,8 @@ Cell.prototype.updt = function(isServer){
         this.gs.edit(this, 'matter');
         this.gs.edit(this, 'color', physicalProperies.color);
         this.gs.edit(this, 'p_mass', this.matter.mass);
-        this.body.shapes[0].radius = Math.sqrt(this.matter.mass/Math.PI);
-        this.gs.edit(this, 'p_radius', Math.sqrt(this.matter.mass/Math.PI));
+        this.body.shapes[0].radius = Math.sqrt(0.4*this.matter.mass/Math.PI);
+        this.gs.edit(this, 'p_radius', this.body.shapes[0].radius);
     }
 }
 
@@ -676,12 +676,6 @@ game_core.prototype.update = function(t) {
     
         //Work out the delta time
     this.dt = this.lastframetime ? ( (t - this.lastframetime)/1000.0).fixed() : 0.016
-    
-    if (this.gs.cells[0]){
-        console.log(this.gs.cells[0].matter.mass);
-        //this.gs.cells[0].matter.log();
-        //console.log('\n');
-    }
     
     for (var i = 0; i<this.gs.cells.length; i++){
         this.gs.cells[i].updt(this.server);
