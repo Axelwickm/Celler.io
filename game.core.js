@@ -509,7 +509,10 @@ Matter.prototype.updatePhysicalProperties = function(){
     this.averageFreeBonds /= this.matter.length;
     this.averageEnthalpy /= this.matter.length;
     
-    var color = 'hsl(350, '+(100-this.averageEnthalpy*.1+10)+'%, '+(this.temperature*.75+50)+'%)';
+    var color = 'hsl('
+		+(Math.abs(this.averageFreeBonds)*10+100)+', '
+		+(100-this.averageEnthalpy*.003)+'%, '
+		+(Math.log(this.temperature+1)*6+30)+'%)';
     
     return {
         mass:this.mass,
