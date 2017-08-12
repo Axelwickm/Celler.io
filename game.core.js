@@ -111,9 +111,6 @@ var game_core = function(game_instance){
         //We start pinging the server to determine latency
         this.client_create_ping_timer();
         
-        //Create debug gui
-        this.client_create_debug_gui();
-        
     }
     else {
         this.server_time = 0;
@@ -862,8 +859,8 @@ game_core.prototype.client_update = function() {
 
     //Work out the fps average
     this.client_refresh_fps();
-    
-    //if (this.selectedCell != -1 ) console.log(this.gs.cells[this.selectedCell].matter);
+	   
+    if (debugging) updateDebuggingInfo();
 
 };
 
@@ -1005,29 +1002,6 @@ game_core.prototype.client_create_configuration = function() {
     this.mouseY = 0;
     this.oldMouse = {x:0, y:0}
     this.dragging = -1;
-
-};
-
-game_core.prototype.client_create_debug_gui = function() {
-
-    this.gui = new dat.GUI();
-
-    var _playersettings = this.gui.addFolder('Your settings');
-    
-    var _debugsettings = this.gui.addFolder('Debug view');
-        
-        _debugsettings.add(this, 'fps_avg').listen();
-        _debugsettings.add(this, 'local_time').listen();
-        _debugsettings.add(this, 'mouseX').listen();
-        _debugsettings.add(this, 'mouseY').listen();
-
-        _debugsettings.open();
-
-    var _consettings = this.gui.addFolder('Connection');
-        _consettings.add(this, 'net_latency').step(0.001).listen();
-        _consettings.add(this, 'net_ping').step(0.001).listen();
-
-        _consettings.open();
 
 };
 

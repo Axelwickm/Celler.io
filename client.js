@@ -11,6 +11,7 @@
 
 //A window global for our game root variable.
 var game = {};
+var debugging = false;
 
 //When loading, we store references to our
 //drawing canvases, and initiate a game instance.
@@ -46,6 +47,13 @@ window.onload = function(){
 				dimPage:false
 			})
 			.sidebar('setting', 'transition', 'overlay');
+			
+		$('#debuggingInfo')
+			.sidebar({
+				closable:false,
+				dimPage:false
+			})
+			.sidebar('setting', 'transition', 'overlay');
 
         //Finally, start the loop
     game.update( new Date().getTime() );
@@ -71,4 +79,19 @@ var updateCellInfo = function (matter){
 		
 		c.appendTo("#matter_list");
 	}
+}
+
+var updateDebugging = function(){
+	debugging = $("#debugging").is(":checked");
+	console.log("Debugging "+debugging);
+	
+	if (debugging) $('#debuggingInfo').sidebar('show');
+	else		   $('#debuggingInfo').sidebar('hide');
+}
+
+var updateDebuggingInfo = function(){
+	$("#debug_fps").text(Math.round(game.fps_avg*10)/10);
+	$("#debug_ping").text(game.net_ping);
+	$("#debug_cells").text(game.gs.cells.length);
+	$("#debug_players").text(game.gs.players.length);
 }

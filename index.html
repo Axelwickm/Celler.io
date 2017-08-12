@@ -39,16 +39,8 @@
 
 	</head>
 
-	<body>
-		<canvas id="viewport"></canvas>
-		
-		<div id = "dock" class="ui_container">		
-			<button class="ui inverted button">Lorem</button>
-			<button class="ui inverted button">Ipsum </button>
-			<button class="ui blue inverted button">Dolor </button>
-			<button class="ui blue inverted button">Amet</button>
-		</div>
-		
+	<body>	
+			<!-- Selected cell info sidebar -->
 		<div id="cellInfo" class="ui right sidebar very wide dark_overlay">
 			<a class="item">
 				<h1> State </h1>
@@ -71,8 +63,53 @@
 				</div>	
 				
 			</a>
+
+		</div>
+			<!-- Debugging sidebar -->
+		<div id="debuggingInfo" class="ui top sidebar dark_overlay">
+			<a class="item">
+				<div class="ui inverted horizontal divider" style="width:200px;">Performance</div>
 			
+				<div class="ui mini grey inverted horizontal statistic">
+					<div class="value" id="debug_fps"></div>
+					<div class="label">fps</div>
+				</div><br>
+				
+				<div class="ui mini grey inverted horizontal statistic">
+					<div class="value" id="debug_ping"></div>
+					<div class="label">ms ping</div>
+				</div><br>
+				
+				<div class="ui inverted horizontal divider" style="width:200px;">Simulation</div>
+				
+				<div class="ui mini grey inverted horizontal statistic">
+					<div class="value" id="debug_cells"></div>
+					<div class="label">cells</div>
+				</div><br>
+				
+				<div class="ui mini grey inverted horizontal statistic">
+					<div class="value" id="debug_players"></div>
+					<div class="label">players</div>
+				</div><br>
+				
+			</a>
+		</div>
+		
+			<!-- Site contents -->
+		<div class="pusher">
+			<canvas id="viewport"></canvas>
 			
+			<div id = "dock" class="ui_container">
+				<div class="ui toggle checkbox" style="position:absolute; left:20px;">
+				  <input id="debugging" type="checkbox" name="debugging" onchange="updateDebugging()">
+				  <label>Debugging</label>
+				</div>
+				
+				<button class="ui inverted button">Lorem</button>
+				<button class="ui inverted button">Ipsum </button>
+				<button class="ui blue inverted button">Dolor </button>
+				<button class="ui blue inverted button">Amet</button>
+			</div>
 		</div>
 	</body>
 

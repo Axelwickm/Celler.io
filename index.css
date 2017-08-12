@@ -38,3 +38,9 @@ html , body {
 #cellInfo {
 	padding:30px;
 }
+
+#debuggingInfo {
+	width: fit-content !important;
+	text-align:center;
+	padding: 20px;
+}
