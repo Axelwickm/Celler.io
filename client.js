@@ -9,17 +9,17 @@
     MIT Licensed.
 */
 
-    //A window global for our game root variable.
+//A window global for our game root variable.
 var game = {};
 
-    //When loading, we store references to our
-    //drawing canvases, and initiate a game instance.
+//When loading, we store references to our
+//drawing canvases, and initiate a game instance.
 window.onload = function(){
 
-        //Create our game client instance.
+    //Create our game client instance.
     game = new game_core();
 
-            //Fetch the viewport
+        //Fetch the viewport
         game.viewport = document.getElementById('viewport');
         window.onresize = function(){
             //Adjust their size
@@ -32,12 +32,22 @@ window.onload = function(){
             
         
 
-            //Fetch the rendering contexts
+        //Fetch the rendering contexts
         game.ctx = game.viewport.getContext('2d');
 
         game.create_camera();
+		paper.setup(game.ctx.canvas);
+		with (paper){
+			var path = new Path.Rectangle([75, 75], [100, 100]);
+			path.strokeColor = 'black';
 
-            //Set the draw style for the font
+			view.onFrame = function(event) {
+				// On each frame, rotate the path by 3 degrees:
+				path.rotate(3);
+			}
+		}
+
+        //Set the draw style for the font
         game.ctx.font = '11px "Helvetica"';
 
         //Finally, start the loop
