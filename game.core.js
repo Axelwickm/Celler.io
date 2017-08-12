@@ -635,6 +635,13 @@ Cell.prototype.draw = function(){
     game.ctx.fill();
 }
 
+Cell.prototype.drawMarked = function(){
+	game.ctx.strokeStyle = 'white';
+	game.ctx.beginPath();
+	game.ctx.arc( this.body.position[0], this.body.position[1], this.body.shapes[0].radius+5, 0, Math.PI * 2 );
+	game.ctx.stroke();
+}
+
 
 /*
     Helper functions for the game code
@@ -782,10 +789,7 @@ game_core.prototype.server_handle_client_inputs = function(client, inputs){
     for (var i in inputs){
         var action = inputs[i].action;
         if (action == 'click cell'){
-            if (this.gs.cells[inputs[i].cellID].color == '#ff0000')
-                this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#0000ff');
-            else
-                this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#ff0000');
+			
         }
     }
 };
@@ -836,8 +840,13 @@ game_core.prototype.client_update = function() {
     
     this.camera.begin();
     
-    for (var i = 0; i<this.gs.cells.length; i++)
-        this.gs.cells[i].draw();
+    for (var i = 0; i<this.gs.cells.length; i++){
+		this.gs.cells[i].draw();
+	}
+	if (this.selectedCell != -1){
+		this.gs.cells[this.selectedCell].drawMarked();
+	}
+	
     
     this.camera.end();
 
@@ -924,8 +933,7 @@ game_core.prototype.create_camera = function() {
 			if (game.viewport.style.cursor == 'default'){
 				var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
 				var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
-				console.log(game.dragging);
-				
+
 				if (clicked_cell_bodies.length != 0){
 					for(var i = 0; i<game.gs.cells.length; i++)
 						if (game.gs.cells[i].body == clicked_cell_bodies[0]){
