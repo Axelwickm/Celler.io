@@ -510,7 +510,7 @@ Matter.prototype.updatePhysicalProperties = function(){
     this.averageEnthalpy /= this.matter.length;
     
     var color = 'hsl('
-		+(Math.abs(this.averageFreeBonds)*10+100)+', '
+		+(this.averageFreeBonds*3+120)+', '
 		+(100-this.averageEnthalpy*.003)+'%, '
 		+(Math.log(this.temperature+1)*6+30)+'%)';
     
