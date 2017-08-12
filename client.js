@@ -36,16 +36,6 @@ window.onload = function(){
         game.ctx = game.viewport.getContext('2d');
 
         game.create_camera();
-		paper.setup(game.ctx.canvas);
-		with (paper){
-			var path = new Path.Rectangle([75, 75], [100, 100]);
-			path.strokeColor = 'black';
-
-			view.onFrame = function(event) {
-				// On each frame, rotate the path by 3 degrees:
-				path.rotate(3);
-			}
-		}
 
         //Set the draw style for the font
         game.ctx.font = '11px "Helvetica"';
