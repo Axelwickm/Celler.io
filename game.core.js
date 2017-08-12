@@ -846,6 +846,7 @@ game_core.prototype.client_update = function() {
     for (var i = 0; i<this.gs.cells.length; i++){
 		this.gs.cells[i].draw();
 	}
+	
 	if (this.selectedCell != -1){
 		this.gs.cells[this.selectedCell].drawMarked();
 	}
@@ -945,7 +946,7 @@ game_core.prototype.create_camera = function() {
 						}   
 				}
 				else {
-					selectedCell = -1;
+					game.selectedCell = -1;
 					$('#cellInfo').sidebar('hide');
 				}
 			}

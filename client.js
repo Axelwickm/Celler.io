@@ -63,9 +63,9 @@ window.onload = function(){
 var updateCellInfo = function (matter){
 	matter = Matter.sortByMass(matter);
 	$("#cell_mass").text(matter.mass);
-	$("#cell_temperature").text(matter.temperature);
-	$("#cell_enthalpy").text(matter.averageEnthalpy);
-	$("#cell_charge").text(matter.averageFreeBonds);
+	$("#cell_temperature").text(Math.round(matter.temperature*10)/10);
+	$("#cell_enthalpy").text(Math.round(matter.averageEnthalpy));
+	$("#cell_charge").text(Math.round(matter.averageFreeBonds));
 	
 	$("#matter_list").empty();
 	for (var i = 0; i<matter.matter.length; i++){
