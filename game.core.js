@@ -904,39 +904,41 @@ game_core.prototype.create_camera = function() {
         if (game.dragging != -1){
             var oldScreen = game.camera.screenToWorld(game.mouseX, game.mouseY);
             var newScreen = game.camera.screenToWorld(game.oldMouse.x, game.oldMouse.y);
-            game.camera.moveTo(game.camera.lookat[0]+newScreen.x-oldScreen.x, game.camera.lookat[1]+newScreen.y-oldScreen.y);
+			if (oldScreen != newScreen){
+				game.viewport.style.cursor = 'move';
+				game.camera.moveTo(game.camera.lookat[0]+newScreen.x-oldScreen.x, game.camera.lookat[1]+newScreen.y-oldScreen.y);
+			}  
         }
-    };
-    
-    this.viewport.onclick = function(e){
-        e = e || window.event;
-        var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
-        var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
-        
-        if (clicked_cell_bodies.length != 0){
-            for(var i = 0; i<game.gs.cells.length; i++)
-                if (game.gs.cells[i].body == clicked_cell_bodies[0]){
-                    game.client_click_cell(i);
-                    break;
-                }   
-        }
-		else {
-			selectedCell = -1;
-			$('#cellInfo').sidebar('hide');
-		}
-            
     };
     
     this.viewport.onmousedown = function(e){
         e = e || window.event;
         if (event.button == 0) {
             game.dragging = 0;
-            game.viewport.style.cursor = 'move';
         }
     };
     this.viewport.onmouseup = function(e){
         e = e || window.event;
         if (event.button == 0) {
+			// Select cell if cursor hasn't moved
+			if (game.viewport.style.cursor == 'default'){
+				var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
+				var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
+				console.log(game.dragging);
+				
+				if (clicked_cell_bodies.length != 0){
+					for(var i = 0; i<game.gs.cells.length; i++)
+						if (game.gs.cells[i].body == clicked_cell_bodies[0]){
+							game.client_click_cell(i);
+							break;
+						}   
+				}
+				else {
+					selectedCell = -1;
+					$('#cellInfo').sidebar('hide');
+				}
+			}
+			
             game.dragging = -1;
             game.viewport.style.cursor = "default";
         }
