@@ -24,7 +24,7 @@ var frame_time = 1/60; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 1/22; //on server we run at 45ms, 22hz
 var physics_frame = 1000/80; // physics updates at 80 Hz
 var physics_timestep = 1/80; // physics steps 41
-var server_physics_update_every = 50; // Incudes physics updates every 50th update
+var server_physics_update_every = 5000; // Incudes physics updates every 50th update
 
 ( function () {
 

@@ -63,7 +63,7 @@ window.onload = function(){
 var updateCellInfo = function (matter){
 	matter = Matter.sortByMass(matter);
 	$("#cell_mass").text(matter.mass);
-	$("#cell_temperature").text(Math.round(matter.temperature*10)/10);
+	$("#cell_temperature").text(matter.temperature.toPrecision(3));
 	$("#cell_enthalpy").text(Math.round(matter.averageEnthalpy));
 	$("#cell_charge").text(Math.round(matter.averageFreeBonds));
 	
@@ -75,7 +75,7 @@ var updateCellInfo = function (matter){
 			.attr("id","compound_"+i);
 		c.find(".header").text(Matter.iform_to_text(compound.iform));
 		c.find(".compound_count").text(compound.count);
-		c.find(".compound_mass").text(Math.round(compound.mass/matter.mass*1000)/1000);
+		c.find(".compound_mass").text((compound.mass/matter.mass).toPrecision(3));
 		
 		c.appendTo("#matter_list");
 	}
@@ -90,8 +90,9 @@ var updateDebugging = function(){
 }
 
 var updateDebuggingInfo = function(){
-	$("#debug_fps").text(Math.round(game.fps_avg*10)/10);
+	$("#debug_fps").text(game.fps_avg.toPrecision(3));
 	$("#debug_ping").text(game.net_ping);
+	$("#debug_client_time").text(game.client_time.toPrecision(3));
 	$("#debug_cells").text(game.gs.cells.length);
 	$("#debug_players").text(game.gs.players.length);
 }
