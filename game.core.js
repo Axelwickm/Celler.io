@@ -684,8 +684,6 @@ game_core.prototype.update = function(t) {
 
         //Store the last frame time
     this.lastframetime = t;
-    if (this.gs.cells.length != 0 && false)
-        console.log(this.gs.cells[0].matter.mass);
 
         //Update the game specifics
     if(this.server) {
@@ -832,7 +830,8 @@ game_core.prototype.client_update_physics = function() {
 
 game_core.prototype.client_update = function() {
     //Clear the screen area
-    this.ctx.clearRect(0,0,this.viewport.width,this.viewport.height);
+	this.ctx.fillStyle = 'rgba(20, 20, 25, 1)';
+    this.ctx.fillRect(0,0,this.viewport.width,this.viewport.height);
     
     this.camera.begin();
     
@@ -848,7 +847,7 @@ game_core.prototype.client_update = function() {
     //Work out the fps average
     this.client_refresh_fps();
     
-    if (this.selectedCell != -1 ) console.log(this.gs.cells[this.selectedCell].matter);
+    //if (this.selectedCell != -1 ) console.log(this.gs.cells[this.selectedCell].matter);
 
 };
 
