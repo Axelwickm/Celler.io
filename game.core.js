@@ -509,7 +509,10 @@ Matter.prototype.updatePhysicalProperties = function(){
     this.averageFreeBonds /= this.matter.length;
     this.averageEnthalpy /= this.matter.length;
     
-    var color = 'hsl(350, '+(100-this.averageEnthalpy*.1+10)+'%, '+(this.temperature*.75+50)+'%)';
+    var color = 'hsl('
+		+(Math.abs(this.averageFreeBonds)*10+100)+', '
+		+(100-this.averageEnthalpy*.003)+'%, '
+		+(Math.log(this.temperature+1)*6+30)+'%)';
     
     return {
         mass:this.mass,
@@ -1051,7 +1054,7 @@ game_core.prototype.client_onserverupdate_recieved = function(data){
         
     // Store the server time (this is offset by the latency in the network, by the time we get it)
     this.server_time = data.t;
-    this.local_time = data.t+this.net_latency;
+    this.local_time = data.t;
     
     //  Update our local offset time from the last server update
     this.client_time = this.server_time - (this.net_offset/1000);
@@ -1093,20 +1096,16 @@ game_core.prototype.client_create_ping_timer = function() {
     //client and server and calculated roughly how our connection is doing
 
     setInterval(function(){
-
         this.last_ping_time = new Date().getTime();
         this.socket.send('p.' + (this.last_ping_time) );
-
-    }.bind(this), 1000);
+	}.bind(this), 1000);
     
 };
 
 
 game_core.prototype.client_onping = function(data) {
-
     this.net_ping = new Date().getTime() - parseFloat( data );
     this.net_latency = this.net_ping/2;
-
 };
 
 game_core.prototype.client_onnetmessage = function(data) {
