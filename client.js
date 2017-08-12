@@ -39,6 +39,13 @@ window.onload = function(){
 
         //Set the draw style for the font
         game.ctx.font = '11px "Helvetica"';
+		
+		$('#cellInfo')
+			.sidebar({
+				closable:false,
+				dimPage:false
+			})
+			.sidebar('setting', 'transition', 'overlay');
 
         //Finally, start the loop
     game.update( new Date().getTime() );

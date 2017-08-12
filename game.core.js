@@ -821,6 +821,7 @@ game_core.prototype.client_click_cell = function(cellID){
         cellID:cellID
     });
     this.selectedCell = cellID;
+	$('#cellInfo').sidebar('show');
 };
 
 
@@ -919,6 +920,10 @@ game_core.prototype.create_camera = function() {
                     break;
                 }   
         }
+		else {
+			selectedCell = -1;
+			$('#cellInfo').sidebar('hide');
+		}
             
     };
     
