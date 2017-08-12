@@ -51,3 +51,20 @@ window.onload = function(){
     game.update( new Date().getTime() );
 
 };
+
+var updateCellInfo = function (matter){
+	matter = Matter.sortByMass(matter);
+	
+	$("#matter_list").empty();
+	for (var i = 0; i<matter.matter.length; i++){
+		var compound = matter.matter[i];
+		var c = $("#matter_item").clone()
+			.css("display", "inline")
+			.attr("id","compound_"+i);
+		c.find(".header").text(Matter.iform_to_text(compound.iform));
+		c.find(".compound_count").text(compound.count);
+		c.find(".compound_mass").text(Math.round(compound.mass/matter.mass*1000)/1000);
+		
+		c.appendTo("#matter_list");
+	}
+}

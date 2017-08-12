@@ -17,6 +17,10 @@ html , body {
 	border-radius: 10px;
 }
 
+.structure {
+	display:none;
+}
+
 #viewport {
 	height : 100%;
 	width : 100%;

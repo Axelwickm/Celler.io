@@ -273,6 +273,7 @@ game_state.prototype.client_load_changes = function(data){
                     }
                     else if (prop != 'e' ) this.cells[change.update_id][prop] = change[prop];
                 }
+				if (change.update_id == game.selectedCell) updateCellInfo(this.cells[game.selectedCell].matter);
             }
         }
         else if (change.type == 'players'){
@@ -541,26 +542,28 @@ Matter.sortIform = function(iform){
     return iform;
 }
 
-Matter.prototype.sortByMass = function() {
+Matter.sortByMass = function(matter) {
     // Sort iforms
-    for (var i = 0; i < this.matter.length; i++){
-        Matter.sortIform(this.matter[i].iform);
+    for (var i = 0; i < matter.matter.length; i++){
+        Matter.sortIform(matter.matter[i].iform);
     }
     
     // Sort by mass
-    return this.matter.sort(function(a, b){
+    matter.matter.sort(function(a, b){
         return a.count*a.mass < b.count*b.mass;
     });
+	
+	return matter;
 }
 
-Matter.prototype.sortAlphabetically = function(){
+Matter.sortAlphabetically = function(matter){
     // Sort iforms
-    for (var i = 0; i < this.matter.length; i++){
-        this.matter[i].iform = Matter.sortIform(this.matter[i].iform);
+    for (var i = 0; i < matter.matter.length; i++){
+        matter.matter[i].iform = Matter.sortIform(matter.matter[i].iform);
     }
     
     // Sort matter depending on iform
-    this.matter.sort(function(a, b){
+    matter.matter.sort(function(a, b){
         for (var i = 0; i < Math.max(a.iform.length, b.iform.length); i += 2){
             if (!a.iform[i+1] && b.iform[i+1]) return false;
             if (!b.iform[i+1] && a.iform[i+1]) return true;
@@ -568,6 +571,7 @@ Matter.prototype.sortAlphabetically = function(){
         }
         return b.mass < a.mass;
     });
+	return matter;
 }
 
 Matter.prototype.log = function(){
@@ -826,6 +830,8 @@ game_core.prototype.client_click_cell = function(cellID){
     });
     this.selectedCell = cellID;
 	$('#cellInfo').sidebar('show');
+	
+	updateCellInfo(this.gs.cells[this.selectedCell].matter);
 };
 
 
