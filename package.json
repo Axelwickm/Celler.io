@@ -10,6 +10,7 @@
     "p2": "0.7.1",
     "probability-distributions": "^0.9.1",
     "python-shell": "0.4.0",
+    "semantic-ui": "^2.2.13",
     "socket.io": "0.9.x"
   },
   "engine": {

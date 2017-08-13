@@ -6,34 +6,116 @@
 
 			<!-- Load style sheet -->
 		<link href="index.css" media="screen" rel="stylesheet" type="text/css">
+		<link rel="shortcut icon" type="image/png" href="/favicon.png"/>
 
 	<!-- Library code -->
-		
+
 		 	<!-- Load socket.io client side contents. -->
 		<script src="/socket.io/socket.io.js"></script>
+		
+		<link rel="stylesheet" type="text/css" href="node_modules/semantic-ui/dist/semantic.min.css">
+		<script
+		  src="https://code.jquery.com/jquery-3.1.1.min.js"
+		  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+		  crossorigin="anonymous"></script>
+		<script src="node_modules/semantic-ui/dist/semantic.min.js"></script>
 
 
 	 		<!-- Load the GUI rendering library code. -->
-		<script type="text/javascript" src="lib/dat.gui.min.js"></script>	
+		<script type="text/javascript" src="lib/dat.gui.min.js"></script>
 			<!-- Load the physics library code. -->
 		<script type="text/javascript" src="lib/p2.min.js"></script>
 			<!-- Load the camera transform library code. -->
 		<script type="text/javascript" src="lib/camera.min.js"></script>
-			<!-- Load the keyboard specific code --> 
+			<!-- Load the keyboard specific code -->
 		<script type="text/javascript" src="lib/keyboard.js"></script>
-	 	
+
 	<!-- Game code -->
 
 	 		<!-- Load the common game code. -->
 		<script type="text/javascript" src="game.core.js"></script>
 			<!-- Finally, Load the game client code. -->
-		<script type="text/javascript" src="client.js"></script>		
+		<script type="text/javascript" src="client.js"></script>
 
 	</head>
 
-	<body>
-		<canvas id="viewport">
-		</canvas>
+	<body>	
+			<!-- Selected cell info sidebar -->
+		<div id="cellInfo" class="ui right sidebar very wide dark_overlay">
+			<a class="item">
+				<h1> State </h1>
+				Mass: <span id="cell_mass"></span></br>
+				Temperature: <span id="cell_temperature"></span></br>
+				Enthalpy: <span id="cell_enthalpy"></span></br>
+				Charge: <span id="cell_charge"></span></br>
+			</a>
+		
+			<a class="item">
+				<h1> Matter </h1>
+
+				<div class="ui inverted relaxed divided list" id="matter_list" style='font-size:0.6rem;'>
+									
+				</div>
+				
+				<div class="item structure" id="matter_item">
+					<div class="header"></div>
+					Count: <span class="compound_count"></span>, Mass: <span class="compound_mass"></span>%
+				</div>	
+				
+			</a>
+
+		</div>
+			<!-- Debugging sidebar -->
+		<div id="debuggingInfo" class="ui top sidebar dark_overlay">
+			<a class="item">
+				<div class="ui inverted horizontal divider" style="width:200px;">Performance</div>
+			
+				<div class="ui mini grey inverted horizontal statistic">
+					<div class="value" id="debug_fps"></div>
+					<div class="label">fps</div>
+				</div><br>
+				
+				<div class="ui mini grey inverted horizontal statistic">
+					<div class="value" id="debug_ping"></div>
+					<div class="label">ms ping</div>
+				</div><br>
+				
+				<div class="ui mini grey inverted horizontal statistic">
+					<div class="value" id="debug_client_time"></div>
+					<div class="label">sec client time</div>
+				</div><br>
+				
+				<div class="ui inverted horizontal divider" style="width:200px;">Simulation</div>
+				
+				<div class="ui mini grey inverted horizontal statistic">
+					<div class="value" id="debug_cells"></div>
+					<div class="label">cells</div>
+				</div><br>
+				
+				<div class="ui mini grey inverted horizontal statistic">
+					<div class="value" id="debug_players"></div>
+					<div class="label">players</div>
+				</div><br>
+				
+			</a>
+		</div>
+		
+			<!-- Site contents -->
+		<div class="pusher">
+			<canvas id="viewport"></canvas>
+			
+			<div id = "dock" class="ui_container">
+				<div class="ui toggle checkbox" style="position:absolute; left:20px;">
+				  <input id="debugging" type="checkbox" name="debugging" onchange="updateDebugging()">
+				  <label>Debugging</label>
+				</div>
+				
+				<button class="ui inverted button">Lorem</button>
+				<button class="ui inverted button">Ipsum </button>
+				<button class="ui blue inverted button">Dolor </button>
+				<button class="ui blue inverted button">Amet</button>
+			</div>
+		</div>
 	</body>
 
 </html>

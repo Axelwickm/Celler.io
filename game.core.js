@@ -24,7 +24,7 @@ var frame_time = 1/60; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 1/22; //on server we run at 45ms, 22hz
 var physics_frame = 1000/80; // physics updates at 80 Hz
 var physics_timestep = 1/80; // physics steps 41
-var server_physics_update_every = 50; // Incudes physics updates every 50th update
+var server_physics_update_every = 5000; // Incudes physics updates every 50th update
 
 ( function () {
 
@@ -114,9 +114,6 @@ var game_core = function(game_instance){
 
         //We start pinging the server to determine latency
         this.client_create_ping_timer();
-        
-        //Create debug gui
-        this.client_create_debug_gui();
         
     }
     else {
@@ -277,6 +274,7 @@ game_state.prototype.client_load_changes = function(data){
                     }
                     else if (prop != 'e' ) this.cells[change.update_id][prop] = change[prop];
                 }
+				if (change.update_id == game.selectedCell) updateCellInfo(this.cells[game.selectedCell].matter);
             }
         }
         else if (change.type == 'players'){
@@ -514,7 +512,7 @@ Matter.prototype.updatePhysicalProperties = function(){
     this.averageEnthalpy /= this.matter.length;
     
     var color = 'hsl('
-		+(Math.abs(this.averageFreeBonds)*10+100)+', '
+		+(this.averageFreeBonds*3+120)+', '
 		+(100-this.averageEnthalpy*.003)+'%, '
 		+(Math.log(this.temperature+1)*6+30)+'%)';
     
@@ -545,26 +543,28 @@ Matter.sortIform = function(iform){
     return iform;
 }
 
-Matter.prototype.sortByMass = function() {
+Matter.sortByMass = function(matter) {
     // Sort iforms
-    for (var i = 0; i < this.matter.length; i++){
-        Matter.sortIform(this.matter[i].iform);
+    for (var i = 0; i < matter.matter.length; i++){
+        Matter.sortIform(matter.matter[i].iform);
     }
     
     // Sort by mass
-    return this.matter.sort(function(a, b){
+    matter.matter.sort(function(a, b){
         return a.count*a.mass < b.count*b.mass;
     });
+	
+	return matter;
 }
 
-Matter.prototype.sortAlphabetically = function(){
+Matter.sortAlphabetically = function(matter){
     // Sort iforms
-    for (var i = 0; i < this.matter.length; i++){
-        this.matter[i].iform = Matter.sortIform(this.matter[i].iform);
+    for (var i = 0; i < matter.matter.length; i++){
+        matter.matter[i].iform = Matter.sortIform(matter.matter[i].iform);
     }
     
     // Sort matter depending on iform
-    this.matter.sort(function(a, b){
+    matter.matter.sort(function(a, b){
         for (var i = 0; i < Math.max(a.iform.length, b.iform.length); i += 2){
             if (!a.iform[i+1] && b.iform[i+1]) return false;
             if (!b.iform[i+1] && a.iform[i+1]) return true;
@@ -572,6 +572,7 @@ Matter.prototype.sortAlphabetically = function(){
         }
         return b.mass < a.mass;
     });
+	return matter;
 }
 
 Matter.prototype.log = function(){
@@ -698,6 +699,13 @@ Cell.prototype.draw = function(){
     game.ctx.fill();
 }
 
+Cell.prototype.drawMarked = function(){
+	game.ctx.strokeStyle = 'white';
+	game.ctx.beginPath();
+	game.ctx.arc( this.body.position[0], this.body.position[1], this.body.shapes[0].radius+5, 0, Math.PI * 2 );
+	game.ctx.stroke();
+}
+
 
 /*
     Helper functions for the game code
@@ -747,8 +755,6 @@ game_core.prototype.update = function(t) {
 
         //Store the last frame time
     this.lastframetime = t;
-    if (this.gs.cells.length != 0 && false)
-        console.log(this.gs.cells[0].matter.mass);
 
         //Update the game specifics
     if(this.server) {
@@ -853,10 +859,7 @@ game_core.prototype.server_handle_client_inputs = function(client, inputs){
     for (var i in inputs){
         var action = inputs[i].action;
         if (action == 'click cell'){
-            if (this.gs.cells[inputs[i].cellID].color == '#ff0000')
-                this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#0000ff');
-            else
-                this.gs.edit(this.gs.cells[inputs[i].cellID], 'color', '#ff0000');
+			
         }
     }
 };
@@ -892,6 +895,9 @@ game_core.prototype.client_click_cell = function(cellID){
         cellID:cellID
     });
     this.selectedCell = cellID;
+	$('#cellInfo').sidebar('show');
+	
+	updateCellInfo(this.gs.cells[this.selectedCell].matter);
 };
 
 
@@ -901,12 +907,19 @@ game_core.prototype.client_update_physics = function() {
 
 game_core.prototype.client_update = function() {
     //Clear the screen area
-    this.ctx.clearRect(0,0,this.viewport.width,this.viewport.height);
+	this.ctx.fillStyle = 'rgba(20, 20, 25, 1)';
+    this.ctx.fillRect(0,0,this.viewport.width,this.viewport.height);
     
     this.camera.begin();
     
-    for (var i = 0; i<this.gs.cells.length; i++)
-        this.gs.cells[i].draw();
+    for (var i = 0; i<this.gs.cells.length; i++){
+		this.gs.cells[i].draw();
+	}
+	
+	if (this.selectedCell != -1){
+		this.gs.cells[this.selectedCell].drawMarked();
+	}
+	
     
     this.camera.end();
 
@@ -916,8 +929,8 @@ game_core.prototype.client_update = function() {
 
     //Work out the fps average
     this.client_refresh_fps();
-    
-    if (this.selectedCell != -1 ) console.log(this.gs.cells[this.selectedCell].matter);
+	   
+    if (debugging) updateDebuggingInfo();
 
 };
 
@@ -973,35 +986,40 @@ game_core.prototype.create_camera = function() {
         if (game.dragging != -1){
             var oldScreen = game.camera.screenToWorld(game.mouseX, game.mouseY);
             var newScreen = game.camera.screenToWorld(game.oldMouse.x, game.oldMouse.y);
-            game.camera.moveTo(game.camera.lookat[0]+newScreen.x-oldScreen.x, game.camera.lookat[1]+newScreen.y-oldScreen.y);
+			if (oldScreen != newScreen){
+				game.viewport.style.cursor = 'move';
+				game.camera.moveTo(game.camera.lookat[0]+newScreen.x-oldScreen.x, game.camera.lookat[1]+newScreen.y-oldScreen.y);
+			}  
         }
-    };
-    
-    this.viewport.onclick = function(e){
-        e = e || window.event;
-        var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
-        var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
-        
-        if (clicked_cell_bodies.length != 0){
-            for(var i = 0; i<game.gs.cells.length; i++)
-                if (game.gs.cells[i].body == clicked_cell_bodies[0]){
-                    game.client_click_cell(i);
-                    break;
-                }   
-        }
-            
     };
     
     this.viewport.onmousedown = function(e){
         e = e || window.event;
         if (event.button == 0) {
             game.dragging = 0;
-            game.viewport.style.cursor = 'move';
         }
     };
     this.viewport.onmouseup = function(e){
         e = e || window.event;
         if (event.button == 0) {
+			// Select cell if cursor hasn't moved
+			if (game.viewport.style.cursor == 'default'){
+				var worldCoords = game.camera.screenToWorld(event.offsetX, event.offsetY);
+				var clicked_cell_bodies = game.physics.hitTest([worldCoords.x, worldCoords.y], game.physics.bodies);
+
+				if (clicked_cell_bodies.length != 0){
+					for(var i = 0; i<game.gs.cells.length; i++)
+						if (game.gs.cells[i].body == clicked_cell_bodies[0]){
+							game.client_click_cell(i);
+							break;
+						}   
+				}
+				else {
+					game.selectedCell = -1;
+					$('#cellInfo').sidebar('hide');
+				}
+			}
+			
             game.dragging = -1;
             game.viewport.style.cursor = "default";
         }
@@ -1054,29 +1072,6 @@ game_core.prototype.client_create_configuration = function() {
     this.mouseY = 0;
     this.oldMouse = {x:0, y:0}
     this.dragging = -1;
-
-};
-
-game_core.prototype.client_create_debug_gui = function() {
-
-    this.gui = new dat.GUI();
-
-    var _playersettings = this.gui.addFolder('Your settings');
-    
-    var _debugsettings = this.gui.addFolder('Debug view');
-        
-        _debugsettings.add(this, 'fps_avg').listen();
-        _debugsettings.add(this, 'local_time').listen();
-        _debugsettings.add(this, 'mouseX').listen();
-        _debugsettings.add(this, 'mouseY').listen();
-
-        _debugsettings.open();
-
-    var _consettings = this.gui.addFolder('Connection');
-        _consettings.add(this, 'net_latency').step(0.001).listen();
-        _consettings.add(this, 'net_ping').step(0.001).listen();
-
-        _consettings.open();
 
 };
 

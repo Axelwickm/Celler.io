@@ -6,10 +6,41 @@ html , body {
 	padding: 0;
 }
 
+.ui_container {
+	z-index:2;
+	position: absolute;
+}
+
+.dark_overlay {
+	background-color:rgba(0, 0, 10, 0.8);
+	alpha:80%;
+	border-radius: 10px;
+}
+
+.structure {
+	display:none;
+}
+
 #viewport {
 	height : 100%;
+	width : 100%;
 	left:0; right:0; top:0; bottom:0;
 	position: absolute;
-	width : 100%;
-	z-index:100;
+	z-index:1;
+}
+
+#dock {
+	bottom:25px;
+	width:100%;
+	text-align: center;
+}
+
+#cellInfo {
+	padding:30px;
+}
+
+#debuggingInfo {
+	width: fit-content !important;
+	text-align:center;
+	padding: 20px;
 }
