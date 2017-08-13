@@ -639,7 +639,7 @@ Cell.prototype.updatePhysicalProperties = function(){
 Cell.prototype.split = function(parts){
 	parts = parts || 2;
 	var center = this.body.position;
-	var radius = this.body.shapes[0].radius;
+	var radius = this.body.shapes[0].radius*1.3;
 	var velocityAngle = Math.atan(this.body.velocity[1]/this.body.velocity[0]);
 
 	var partCompounds = []; 
@@ -647,11 +647,11 @@ Cell.prototype.split = function(parts){
 	
 	// Distribute the compounds fairly into different parts
 	for (var i = 0; i < this.matter.matter.length; i++){
-		var partShare = [];
+		var partShare = PD.rnorm(parts, 10, 0.3);
 		var sum = 0;
 		for (var j = 0; j<parts; j++){
-			partShare.push(Math.random());
-			sum += partShare[partShare.length-1];
+			partShare[j] = Math.abs(partShare[j]);
+			sum += partShare[j];
 		}
 		for (var j = 0; j<parts; j++){
 			partShare[j] = Math.round(this.matter.matter[i].count * partShare[j] / sum);
