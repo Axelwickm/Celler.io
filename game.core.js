@@ -59,7 +59,11 @@ var server_physics_update_every = 50; // Incudes physics updates every 50th upda
 
 /* The game_core class */
 
-if('undefined' != typeof(global)) var p2 = require('p2');
+if('undefined' != typeof(global)) {
+	var p2 = require('p2');
+	var PD = require("probability-distributions");
+}
+
 var game_core = function(game_instance){
 
     //Store the instance, if any
@@ -121,7 +125,7 @@ var game_core = function(game_instance){
         
         // Add some test cells to the gamestate
     
-        for (var i = 0; i<100; i++){
+        for (var i = 0; i<1; i++){
             var random_compounds = [];
             var compound_count = Math.random()*6+1;
             for (var j = 0; j<compound_count; j++){
@@ -203,7 +207,7 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
         if (i < this.cells.length)
             obj = this.cells[i];
         else
-            obj = this.players[i % this.cells.length];
+            obj = this.players[i - this.cells.length];
         // The change variable of this object
         var change = {};
         if (all_data){
@@ -618,20 +622,79 @@ var Cell = function(gamecore, options){
 Cell.prototype.updt = function(isServer){
     if (isServer && Math.random() < 0.05*Math.sqrt(this.matter.temperature)){
         this.matter.random_reaction();
-        var physicalProperies = this.matter.updatePhysicalProperties();
-        this.gs.edit(this, 'matter');
-        this.gs.edit(this, 'color', physicalProperies.color);
-        this.gs.edit(this, 'p_mass', this.matter.mass/1000);
-        this.body.shapes[0].radius = Math.sqrt(0.4*this.matter.mass/Math.PI);
-        this.gs.edit(this, 'p_radius', this.body.shapes[0].radius);
+        this.updatePhysicalProperties();
     }
     this.matter.temperature *= 0.9995;
+}
+
+Cell.prototype.updatePhysicalProperties = function(){
+	var physicalProperies = this.matter.updatePhysicalProperties();
+	this.gs.edit(this, 'matter');
+	this.gs.edit(this, 'color', physicalProperies.color);
+	this.gs.edit(this, 'p_mass', this.matter.mass/1000);
+	this.body.shapes[0].radius = Math.sqrt(0.4*this.matter.mass/Math.PI);
+	this.gs.edit(this, 'p_radius', this.body.shapes[0].radius);
+}
+
+Cell.prototype.split = function(parts){
+	parts = parts || 2;
+	var center = this.body.position;
+	var radius = this.body.shapes[0].radius;
+	var velocityAngle = Math.atan(this.body.velocity[1]/this.body.velocity[0]);
+
+	var partCompounds = []; 
+	for (var i = 0; i < parts; i++) partCompounds.push([]);
+	
+	// Distribute the compounds fairly into different parts
+	for (var i = 0; i < this.matter.matter.length; i++){
+		var partShare = [];
+		var sum = 0;
+		for (var j = 0; j<parts; j++){
+			partShare.push(Math.random());
+			sum += partShare[partShare.length-1];
+		}
+		for (var j = 0; j<parts; j++){
+			partShare[j] = Math.round(this.matter.matter[i].count * partShare[j] / sum);
+			if (partShare[j] != 0){
+				partCompounds[j].push( Matter.create(this.matter.matter[i].iform.slice(), partShare[j])	);
+			}
+		}
+	}
+	
+	// Create new child cells
+	for (var i = 1; i<parts; i++){
+		if (partCompounds[i].length != 0){
+			// Find new position
+			var pos = [radius*Math.cos(i*2*Math.PI/parts+velocityAngle)+center[0], radius*Math.sin(i*2*Math.PI/parts+velocityAngle)+center[1]];
+			
+			var childCell = new Cell(this.gs.gamecore, {
+				p_pos:pos,
+				p_vel:this.body.velocity,
+				compounds:partCompounds[i]
+			});
+			childCell.matter.temperature = this.matter.temperature;
+			this.gs.add(childCell);
+		}
+	}
+	
+	// Update parent cell matter, and delete it if empty
+	if (partCompounds[0].length == 0){
+		this.gs.erase(this);
+	}
+	else {
+		// Update old cell
+		this.matter = new Matter(partCompounds[0], this.matter.temperature);
+		var pos = [Math.cos(velocityAngle)*radius+center[0], Math.sin(velocityAngle)*radius+center[1]];
+		this.gs.edit(this, 'p_pos', pos);
+		this.updatePhysicalProperties();
+	}
+
 }
 
 Cell.prototype.draw = function(){
     game.ctx.fillStyle = this.color;
     game.ctx.beginPath();
-    game.ctx.arc( this.body.position[0], this.body.position[1], this.body.shapes[0].radius, 0, Math.PI * 2 );
+    game.ctx.arc( this.body.position[0], this.body.position[1], this.body.shapes[0].radius, 0, Math.PI*2 );
     game.ctx.fill();
 }
 
@@ -738,6 +801,12 @@ game_core.prototype.server_update = function(){
     //Update the state of our local clock to match the timer
     this.server_time = this.local_time;
     this.server_updates++;
+	
+	// Randomly split cell
+	if (Math.random() < 0.0002 && this.gs.cells.length > 0){
+		console.log("Split");
+		this.gs.cells[Math.floor(Math.random()*this.gs.cells.length)].split();
+	}
 
     //Make a snapshot of the current state, for updating the clients
     var gamestate_change;
