@@ -97,8 +97,14 @@ var updateDebugging = function(){
 	debugging = $("#debugging").is(":checked");
 	console.log("Debugging "+debugging);
 	
-	if (debugging) $('#debuggingInfo').sidebar('show');
-	else		   $('#debuggingInfo').sidebar('hide');
+	if (debugging){
+		$('#debuggingInfo').sidebar('show');
+		$('.debug').show();
+	}
+	else {
+		$('#debuggingInfo').sidebar('hide');
+		$('.debug').hide();
+	}
 }
 
 var updateDebuggingInfo = function(){
@@ -107,4 +113,8 @@ var updateDebuggingInfo = function(){
 	$("#debug_client_time").text(game.client_time.toPrecision(3));
 	$("#debug_cells").text(game.gs.cells.length);
 	$("#debug_players").text(game.gs.players.length);
+}
+
+var splitSelected = function(){
+	game.client_debug_split_cell(game.selectedCell);
 }
