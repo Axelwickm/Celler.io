@@ -873,18 +873,23 @@ game_core.prototype.server_player_leave = function(client){
 
 game_core.prototype.server_handle_client_inputs = function(client, inputs){
     for (var i in inputs){
-		switch(inputs[i].action) {
-			case 'click cell':
-				break;
-			case 'debug toggle pause':
-				this.gs.edit(this.gs.common[0], 'paused', !this.gs.common[0].paused);
-				break;
-			case 'debug split cell':
-				this.gs.cells[inputs[i].cellID].split();
-				break;
-			default:
-				console.log('Command not recognized: '+JSON.stringify(inputs[i]));
-		}
+		try {
+			switch(inputs[i].action) {
+				case 'click cell':
+					break;
+				case 'toggle pause':
+					this.gs.edit(this.gs.common[0], 'paused', !this.gs.common[0].paused);
+					break;
+				case 'split cell':
+					this.gs.cells[inputs[i].cellID].split();
+					break;
+				case 'cell add temp':
+					this.gs.cells[inputs[i].cellID].matter.temperature += inputs[i].temp;
+					break;
+				default:
+					console.log('Command not recognized: '+JSON.stringify(inputs[i]));
+			}
+		} catch(e){console.log('Fail to parse command: '+JSON.stringify(inputs[i])+'\nWith catch: '+e);}
     }
 }
 
@@ -930,13 +935,13 @@ game_core.prototype.client_click_cell = function(cellID){
 
 game_core.prototype.client_debug_togglePause = function(){
 	this.me.inputs.push({
-        action:'debug toggle pause',
+        action:'toggle pause',
     });
 }
 
 game_core.prototype.client_debug_split_cell = function(cellID){
 	this.me.inputs.push({
-        action:'debug split cell',
+        action:'split cell',
         cellID:cellID
     });
 }

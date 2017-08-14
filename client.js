@@ -13,6 +13,8 @@
 var game = {};
 var debugging = false;
 
+var commands = ['click cell, selected','toggle pause','split cell, selected','cell add temp, selected, temp=0'];
+
 //When loading, we store references to our
 //drawing canvases, and initiate a game instance.
 window.onload = function(){
@@ -55,41 +57,90 @@ window.onload = function(){
 			})
 			.sidebar('setting', 'transition', 'overlay');
 			
-		var commandList = [];
+		$('.ui.dropdown').dropdown();
+		
+		var suggested = [];
+		var autoComplete = -1;
+			
+		var prevCommandList = [];
 		var stepBack = 0;
+		
+		var getSuggestions = function(){
+			if ($("#sendCommand").is(":focus")){
+				// Come up with suggestions
+				suggested = [];
+				commands.forEach(function(e){
+					if (e.includes($("#sendCommand").val())) suggested.push(e);
+				})
+				$("#searchSuggestions").empty();
+				for (var i = 0; i<suggested.length && i<8; i++){
+					if (i == autoComplete)
+						$("#searchSuggestions").append("<a style='color:#AAA;'>"+suggested[i]+"</a><br>");
+					else
+						$("#searchSuggestions").append("<a style='color:#444455;'>"+suggested[i]+"</a><br>");
+				}
+			}
+		}
+		
 		$("#sendCommand").keydown(function(event) {
-			if (event.which == 13 && $("#sendCommand").val() != "") {
-				if (commandList[commandList.length-1] != $("#sendCommand").val()) commandList.push($("#sendCommand").val());
+			if (autoComplete != -1 && event.which == 13){
+				$("#sendCommand").val(suggested[autoComplete]);
+				autoComplete = -1;
+			}
+			else if (event.which == 13 && $("#sendCommand").val() != "") {
+				if (prevCommandList[prevCommandList.length-1] != $("#sendCommand").val()) prevCommandList.push($("#sendCommand").val());
 				stepBack = 0;
 				
 				var commandString = $("#sendCommand").val().split(",");
 				var command = {	action:commandString[0] };
 				commandString.slice(1).forEach(function(param){
-					var propVal = param.replace(/\s/g, '').split('=');
-					if ($.isNumeric(propVal[1]))
-						propVal[1] = parseFloat(propVal[1]);
-					command[propVal[0]] = propVal[1];
+					var propVal = $.trim(param).split('=');
+					console.log(propVal);
+					if (typeof propVal[1] != 'undefined'){
+						if ($.isNumeric(propVal[1]))
+							propVal[1] = parseFloat(propVal[1]);
+						command[propVal[0]] = propVal[1];
+					}
+					else command[propVal[0]] = true;
+					
 				});
+				if (typeof command['selected'] != 'undefined' && game.selectedCell != -1)
+					command.cellID = game.selectedCell;
 				
 				console.log("Sending command to server: "+JSON.stringify(command));
 				game.client_action(command);
 				
 				$("#sendCommand").val("");
 			}
+			else if (event.which == 40 && event.ctrlKey == true && suggested.length != 0){
+				console.log(autoComplete);
+				autoComplete = (autoComplete+2)%(suggested.length+1)-1;
+			}
 			else if (event.which == 38){
-				if (commandList[commandList.length - stepBack -1]){
+				if (prevCommandList[prevCommandList.length - stepBack -1]){
 					stepBack++;
-					$("#sendCommand").val(commandList[commandList.length - stepBack]);
+					$("#sendCommand").val(prevCommandList[prevCommandList.length - stepBack]);
 				}
 			}
 			else if (event.which == 40){
 				if (stepBack != 0){
 					stepBack--;
-					$("#sendCommand").val(commandList[commandList.length - stepBack]);
+					$("#sendCommand").val(prevCommandList[prevCommandList.length - stepBack]);
 				}
 			}
+			getSuggestions();
 		});
+		
 
+		$("#sendCommand").on('input',function(e){
+			getSuggestions();
+		});
+		
+		$("#sendCommand").focusout(function(){
+			$("#searchSuggestions").empty();
+			autoComplete = -1;
+		});
+		
 		updateDebugging();
 
         //Finally, start the loop
