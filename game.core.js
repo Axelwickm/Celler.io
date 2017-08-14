@@ -158,6 +158,12 @@ var game_state = function(gamecore){
     this.gamecore = gamecore;
     this.server = gamecore.server;
     this.client_initial = true;
+	this.common = [];
+	this.add({
+		type:'common',
+		paused:false
+	})
+	
     this.deletions = [];
     
     this.cells = [];
@@ -185,8 +191,9 @@ game_state.prototype.erase = function(obj){
 }
 
 game_state.prototype.edit = function(obj, p, v){
-    if (v)
+    if (typeof v !== 'undefined' )
         obj[p] = v;
+	
     // 'add' takes priority over 'edit'
     if (this.server && (obj.update.e.length == 0 || obj.update.e == 'edit')){
         obj.update.e = 'edit';
@@ -199,12 +206,15 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
     var changes = [];
     
     // Loop through both cells and players
-    for (var i = 0; i < this.cells.length + this.players.length; i++){
+    for (var i = -1; i < this.cells.length + this.players.length; i++){
         var obj;
-        if (i < this.cells.length)
+		if (i == -1)
+			obj = this.common[0];
+        else if (i < this.cells.length)
             obj = this.cells[i];
         else
             obj = this.players[i - this.cells.length];
+
         // The change variable of this object
         var change = {};
         if (all_data){
@@ -261,7 +271,15 @@ game_state.prototype.client_load_changes = function(data){
     var player_i = 0;
     for (var i = 0; i < data.c.length; i++){
         var change = data.c[i];
-        if (change.type == 'cells'){
+		if (change.type == 'common'){
+			if (change.e == 'add' || this.client_initial) this.add(change);
+            else if (change.e == 'edit'){
+                for (var prop in change){
+                    if (prop != 'e' ) this.common[0][prop] = change[prop];
+                }
+            }
+		}
+        else if (change.type == 'cells'){
             if (change.e == 'add' || this.client_initial) this.add(new Cell(this.gamecore, change));
             else if (change.e == 'edit') {
                 for (var prop in change){
@@ -743,30 +761,27 @@ game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x,
 
 */
 
-    //Main update loop
+// Main update loop
 game_core.prototype.update = function(t) {
     
-        //Work out the delta time
+    // Work out the delta time
     this.dt = this.lastframetime ? ( (t - this.lastframetime)/1000.0).fixed() : 0.016
     
-    for (var i = 0; i<this.gs.cells.length; i++){
-        this.gs.cells[i].updt(this.server);
-    }
 
-        //Store the last frame time
+    // Store the last frame time
     this.lastframetime = t;
 
-        //Update the game specifics
+    // Update the game specifics
     if(this.server) {
         this.server_update();
     } else {
         this.client_update();
     }
 
-        //schedule the next update
+    // Schedule the next update
     this.updateid = window.requestAnimationFrame( this.update.bind(this), this.viewport );
 
-};
+}
 
 
 /*
@@ -776,15 +791,21 @@ game_core.prototype.update = function(t) {
 
 
 game_core.prototype.update_physics = function() {
-    this.physics.step(physics_timestep);
+	if (!this.gs.common[0].paused){ // Don't run physics if paused
+		this.physics.step(physics_timestep);
+		for (var i = 0; i<this.gs.cells.length; i++){
+			this.gs.cells[i].updt(this.server);
+		}
+	}
+		
 
     if(this.server) {
         this.server_update_physics();
     } else {
         this.client_update_physics();
     }
-    
-};
+  
+}
 
 /*
 
@@ -821,7 +842,7 @@ game_core.prototype.server_update = function(){
         this.gs.players[i].instance.emit( 'onserverupdate', gamestate_change);
     }
 
-};
+}
 
 game_core.prototype.server_new_player = function(client){
     var player = new Player(client);
@@ -834,7 +855,7 @@ game_core.prototype.server_new_player = function(client){
     player.instance.emit('onserverupdate', gamestate_to_client);
     
     console.log('Player connected - ID: '+player.userid);
-};
+}
 
 game_core.prototype.server_player_leave = function(client){
     var index = null;
@@ -847,19 +868,22 @@ game_core.prototype.server_player_leave = function(client){
     console.log('Player left - ID: '+this.gs.players[index].userid);
     this.gs.erase(this.gs.players[index]);
     
-};
+}
 
 game_core.prototype.server_handle_client_inputs = function(client, inputs){
     for (var i in inputs){
 		switch(inputs[i].action) {
 			case 'click cell':
 				break;
+			case 'debug toggle pause':
+				this.gs.edit(this.gs.common[0], 'paused', !this.gs.common[0].paused);
+				break;
 			case 'debug split cell':
 				this.gs.cells[inputs[i].cellID].split();
 				break;
 		}
     }
-};
+}
 
 game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {
     //Fetch which client this refers to
@@ -874,7 +898,7 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
     if (!player)
         console.error('Player with client.userid '+client.userid+', could not be found on server handle input.');
 
-};
+}
 
 
 /*
@@ -896,6 +920,12 @@ game_core.prototype.client_click_cell = function(cellID){
 	
 	updateCellInfo(this.gs.cells[this.selectedCell].matter);
 };
+
+game_core.prototype.client_debug_togglePause = function(){
+	this.me.inputs.push({
+        action:'debug toggle pause',
+    });
+}
 
 game_core.prototype.client_debug_split_cell = function(cellID){
 	this.me.inputs.push({

@@ -73,11 +73,14 @@ var cellDeselected = function(){
 }
 
 var updateCellInfo = function (matter){
-	matter = Matter.sortByMass(matter);
 	$("#cell_mass").text(matter.mass);
 	$("#cell_temperature").text(matter.temperature.toPrecision(3));
 	$("#cell_enthalpy").text(Math.round(matter.averageEnthalpy));
 	$("#cell_charge").text(Math.round(matter.averageFreeBonds));
+	
+	matter.matter.sort(function(a, b){
+        return a.count*a.mass < b.count*b.mass;
+    });
 	
 	$("#matter_list").empty();
 	for (var i = 0; i<matter.matter.length; i++){
@@ -87,7 +90,7 @@ var updateCellInfo = function (matter){
 			.attr("id","compound_"+i);
 		c.find(".header").text(Matter.iform_to_text(compound.iform));
 		c.find(".compound_count").text(compound.count);
-		c.find(".compound_mass").text((compound.mass/matter.mass).toPrecision(3));
+		c.find(".compound_mass").text((compound.count*compound.mass/matter.mass).toPrecision(3));
 		
 		c.appendTo("#matter_list");
 	}
@@ -113,6 +116,21 @@ var updateDebuggingInfo = function(){
 	$("#debug_client_time").text(game.client_time.toPrecision(3));
 	$("#debug_cells").text(game.gs.cells.length);
 	$("#debug_players").text(game.gs.players.length);
+}
+
+var togglePause = function(){
+	if (game.gs.common[0].paused){
+		$("#pauseButton").text("Pause");
+		$("#pauseButton").addClass("blue");
+		$("#pauseButton").removeClass("red");
+	}
+	else {
+		$("#pauseButton").text("Unpause");
+		$("#pauseButton").addClass("red");
+		$("#pauseButton").removeClass("blue");
+	}
+		
+	game.client_debug_togglePause();
 }
 
 var splitSelected = function(){
