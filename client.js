@@ -54,11 +54,23 @@ window.onload = function(){
 				dimPage:false
 			})
 			.sidebar('setting', 'transition', 'overlay');
+		updateDebugging();
 
         //Finally, start the loop
     game.update( new Date().getTime() );
 
 };
+
+var cellSelected = function(){
+	$('#cellInfo').sidebar('show');
+	$('.cellSelect').removeClass('disabled');
+}
+
+var cellDeselected = function(){
+	$('#cellInfo').sidebar('hide');
+	$('.cellSelect').addClass('disabled');
+	
+}
 
 var updateCellInfo = function (matter){
 	matter = Matter.sortByMass(matter);

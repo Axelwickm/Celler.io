@@ -24,7 +24,7 @@ var frame_time = 1/60; // run the local game at 16ms/ 60hz
 if('undefined' != typeof(global)) frame_time = 1/22; //on server we run at 45ms, 22hz
 var physics_frame = 1000/80; // physics updates at 80 Hz
 var physics_timestep = 1/80; // physics steps 41
-var server_physics_update_every = 5000; // Incudes physics updates every 50th update
+var server_physics_update_every = 50; // Incudes physics updates every 50th update
 
 ( function () {
 
@@ -122,7 +122,7 @@ var game_core = function(game_instance){
         
         // Add some test cells to the gamestate
     
-        for (var i = 0; i<1; i++){
+        for (var i = 0; i<60; i++){
             var random_compounds = [];
             var compound_count = Math.random()*6+1;
             for (var j = 0; j<compound_count; j++){
@@ -807,12 +807,6 @@ game_core.prototype.server_update = function(){
     //Update the state of our local clock to match the timer
     this.server_time = this.local_time;
     this.server_updates++;
-	
-	// Randomly split cell
-	if (Math.random() < 0.0002 && this.gs.cells.length > 0){
-		console.log("Split");
-		this.gs.cells[Math.floor(Math.random()*this.gs.cells.length)].split();
-	}
 
     //Make a snapshot of the current state, for updating the clients
     var gamestate_change;
@@ -857,10 +851,13 @@ game_core.prototype.server_player_leave = function(client){
 
 game_core.prototype.server_handle_client_inputs = function(client, inputs){
     for (var i in inputs){
-        var action = inputs[i].action;
-        if (action == 'click cell'){
-			
-        }
+		switch(inputs[i].action) {
+			case 'click cell':
+				break;
+			case 'debug split cell':
+				this.gs.cells[inputs[i].cellID].split();
+				break;
+		}
     }
 };
 
@@ -895,10 +892,17 @@ game_core.prototype.client_click_cell = function(cellID){
         cellID:cellID
     });
     this.selectedCell = cellID;
-	$('#cellInfo').sidebar('show');
+	cellSelected();
 	
 	updateCellInfo(this.gs.cells[this.selectedCell].matter);
 };
+
+game_core.prototype.client_debug_split_cell = function(cellID){
+	this.me.inputs.push({
+        action:'debug split cell',
+        cellID:cellID
+    });
+}
 
 
 game_core.prototype.client_update_physics = function() {
@@ -1016,7 +1020,7 @@ game_core.prototype.create_camera = function() {
 				}
 				else {
 					game.selectedCell = -1;
-					$('#cellInfo').sidebar('hide');
+					cellDeselected();
 				}
 			}
 			
