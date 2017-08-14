@@ -880,11 +880,24 @@ game_core.prototype.server_handle_client_inputs = function(client, inputs){
 				case 'toggle pause':
 					this.gs.edit(this.gs.common[0], 'paused', !this.gs.common[0].paused);
 					break;
+				case 'cell delete':
+					this.gs.erase(this.gs.cells[inputs[i].cellID]);
+					break;
 				case 'split cell':
 					this.gs.cells[inputs[i].cellID].split();
 					break;
 				case 'cell add temp':
 					this.gs.cells[inputs[i].cellID].matter.temperature += inputs[i].temp;
+					break;
+				case 'cell speed':
+					if (typeof inputs[i].times != 'undefined'){
+						this.gs.cells[inputs[i].cellID].body.velocity[0] *= inputs[i].times;
+						this.gs.cells[inputs[i].cellID].body.velocity[1] *= inputs[i].times;
+					}
+					if (typeof inputs[i].add != 'undefined'){
+						this.gs.cells[inputs[i].cellID].body.velocity[0] += inputs[i].add;
+						this.gs.cells[inputs[i].cellID].body.velocity[1] += inputs[i].add;
+					}
 					break;
 				default:
 					console.log('Command not recognized: '+JSON.stringify(inputs[i]));

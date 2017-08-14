@@ -13,7 +13,7 @@
 var game = {};
 var debugging = false;
 
-var commands = ['click cell, selected','toggle pause','split cell, selected','cell add temp, selected, temp=0'];
+var commands = ['click cell, selected','toggle pause','cell delete, selected','split cell, selected','cell add temp, selected, temp=0','cell speed, selected, times=1'];
 
 //When loading, we store references to our
 //drawing canvases, and initiate a game instance.
@@ -56,8 +56,6 @@ window.onload = function(){
 				dimPage:false
 			})
 			.sidebar('setting', 'transition', 'overlay');
-			
-		$('.ui.dropdown').dropdown();
 		
 		var suggested = [];
 		var autoComplete = -1;
@@ -95,7 +93,6 @@ window.onload = function(){
 				var command = {	action:commandString[0] };
 				commandString.slice(1).forEach(function(param){
 					var propVal = $.trim(param).split('=');
-					console.log(propVal);
 					if (typeof propVal[1] != 'undefined'){
 						if ($.isNumeric(propVal[1]))
 							propVal[1] = parseFloat(propVal[1]);
