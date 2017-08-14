@@ -882,6 +882,8 @@ game_core.prototype.server_handle_client_inputs = function(client, inputs){
 			case 'debug split cell':
 				this.gs.cells[inputs[i].cellID].split();
 				break;
+			default:
+				console.log('Command not recognized: '+JSON.stringify(inputs[i]));
 		}
     }
 }
@@ -910,6 +912,10 @@ game_core.prototype.handle_server_input = function(client, input, input_time, in
     and usually start with client_* to make things clearer.
 
 */
+
+game_core.prototype.client_action = function(input){
+	this.me.inputs.push(input);
+}
 
 game_core.prototype.client_click_cell = function(cellID){
     this.me.inputs.push({

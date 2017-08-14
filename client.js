@@ -54,12 +54,50 @@ window.onload = function(){
 				dimPage:false
 			})
 			.sidebar('setting', 'transition', 'overlay');
+			
+		var commandList = [];
+		var stepBack = 0;
+		$("#sendCommand").keydown(function(event) {
+			if (event.which == 13 && $("#sendCommand").val() != "") {
+				if (commandList[commandList.length-1] != $("#sendCommand").val()) commandList.push($("#sendCommand").val());
+				stepBack = 0;
+				
+				var commandString = $("#sendCommand").val().split(",");
+				var command = {	action:commandString[0] };
+				commandString.slice(1).forEach(function(param){
+					var propVal = param.replace(/\s/g, '').split('=');
+					if ($.isNumeric(propVal[1]))
+						propVal[1] = parseFloat(propVal[1]);
+					command[propVal[0]] = propVal[1];
+				});
+				
+				console.log("Sending command to server: "+JSON.stringify(command));
+				game.client_action(command);
+				
+				$("#sendCommand").val("");
+			}
+			else if (event.which == 38){
+				if (commandList[commandList.length - stepBack -1]){
+					stepBack++;
+					$("#sendCommand").val(commandList[commandList.length - stepBack]);
+				}
+			}
+			else if (event.which == 40){
+				if (stepBack != 0){
+					stepBack--;
+					$("#sendCommand").val(commandList[commandList.length - stepBack]);
+				}
+			}
+		});
+
 		updateDebugging();
 
         //Finally, start the loop
     game.update( new Date().getTime() );
 
 };
+
+
 
 var cellSelected = function(){
 	$('#cellInfo').sidebar('show');
