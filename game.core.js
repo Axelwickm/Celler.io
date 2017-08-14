@@ -660,7 +660,7 @@ Cell.prototype.split = function(parts){
 	var center = this.body.position;
 	var radius = this.body.shapes[0].radius*1.3;
 	var velocityAngle = Math.atan(this.body.velocity[1]/this.body.velocity[0]);
-	if (this.body.velocity[0] ==  0) velocityAngle = Math.random()*Math.PI*4;
+	if (this.body.velocity[0] == 0) velocityAngle = Math.random()*Math.PI*4;
 
 	var partCompounds = []; 
 	for (var i = 0; i < parts; i++) partCompounds.push([]);
