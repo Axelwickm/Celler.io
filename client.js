@@ -13,7 +13,9 @@
 var game = {};
 var debugging = false;
 
-var commands = ['click cell, selected','toggle pause','cell delete, selected','split cell, selected','cell add temp, selected, temp=0','cell speed, selected, times=1'];
+var commands = ['click cell, selected','toggle pause','cell delete, selected',
+				'cell split, selected','cell merge next, selected','cell add temp, selected, temp=0',
+				'cell speed, selected, times=1'];
 
 //When loading, we store references to our
 //drawing canvases, and initiate a game instance.

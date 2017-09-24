@@ -133,7 +133,6 @@ var game_core = function(game_instance){
                     iform.push(Math.floor(Math.random()*24));
                 }
                 random_compounds.push(Matter.create(iform, Math.floor(Math.random()*10+1)));
-                
             }
             
             this.gs.add(new Cell(this, {
@@ -185,6 +184,7 @@ game_state.prototype.add = function(obj){
 game_state.prototype.erase = function(obj){
     var index = this[obj.type].indexOf(obj);
     this[obj.type].splice(index, 1);
+	if (obj.type == 'cells') this.gamecore.physics.removeBody(obj.body); 
     if (this.server){
         this.deletions.push({type:obj.type, index:index});
     }
@@ -265,6 +265,7 @@ game_state.prototype.server_get_changes = function(simulation_status, all_data){
 game_state.prototype.client_load_changes = function(data){
     for (var i = 0; i < data.d.length; i++){
         var object = data.d[i];
+		if (object.type == 'cells') this.gamecore.physics.removeBody(this[object.type][object.index].body);
         this[object.type].splice([object.index], 1);
     }
     
@@ -337,16 +338,18 @@ Matter.E_bonds   = [ -4, -3, -2, -1, 1 , 2 , 3 , 4 , -4, -3, -2, -1, 1 , 2 , 3 ,
 Matter.prototype.add = function(newCompound){
     // Push the new compund if not all of it has been consumed
     if (newCompound.count != 0) {
-        var compound = matter.find(function(e){
-            return (newCompound.length == e.iform.length) && newCompound.every(function(element, index) {
+        var compound = this.matter.find(function(e){
+            return (newCompound.iform.length == e.iform.length) && newCompound.iform.every(function(element, index) {
                 return element === e.iform[index]; 
             });
         });
-        
+
+        if (compound) console.log("found: "+newCompound.count+'+'+compound.count);
+
         if (compound)
             compound.count += newCompound.count;
         else 
-            matter.push(newCompound);
+            this.matter.push(newCompound);
     }   
     
     this.updatePhysicalProperties();
@@ -614,6 +617,7 @@ Matter.iform_to_text = function(iform){
 var Cell = function(gamecore, options){
     this.type = options.type || 'cells';
     this.gs = gamecore.gs;
+	this.mergeNext = false;
     
     if (options.matter)
         this.matter = new Matter(options.matter.matter, 1);
@@ -631,7 +635,8 @@ var Cell = function(gamecore, options){
         angularVelocity: options.p_angvel || 0,
         damping:0.00
     });
-    
+	this.body.cell = this;
+	
     var circleShape = new p2.Circle({ radius: Math.sqrt(0.4*this.matter.mass/Math.PI) });
     this.body.addShape(circleShape);
     
@@ -709,6 +714,34 @@ Cell.prototype.split = function(parts){
 		this.updatePhysicalProperties();
 	}
 
+}
+
+Cell.prototype.merge = function(otherCell){	
+	this.mergeNext = false;
+	var massRatio = otherCell.matter.mass / this.matter.mass;
+	
+	var avgPos = [
+		this.body.position[0]+massRatio*(otherCell.body.position[0]-this.body.position[0]),
+		this.body.position[1]+massRatio*(otherCell.body.position[1]-this.body.position[1])
+	];
+	var avgVel = [
+		this.body.velocity[0]+massRatio*(otherCell.body.velocity[0]-this.body.velocity[0]),
+		this.body.velocity[1]+massRatio*(otherCell.body.velocity[1]-this.body.velocity[1])
+	];
+	avgPos = otherCell.body.position;
+	avgVel = [0,0];
+	this.gs.edit(this,'p_pos', avgPos);
+	this.gs.edit(this,'p_vel', avgVel);
+	this.body.position = avgPos;
+	this.body.velocity = avgVel;
+	this.updatePhysicalProperties();
+	
+	for (var i = 0; i<otherCell.matter.matter.length; i++){
+		this.matter.add(Matter.create(otherCell.matter.matter[i].iform, otherCell.matter.matter[i].count));
+	}
+	
+	// Delete other cell
+	this.gs.erase(otherCell);
 }
 
 Cell.prototype.draw = function(){
@@ -883,8 +916,11 @@ game_core.prototype.server_handle_client_inputs = function(client, inputs){
 				case 'cell delete':
 					this.gs.erase(this.gs.cells[inputs[i].cellID]);
 					break;
-				case 'split cell':
+				case 'cell split':
 					this.gs.cells[inputs[i].cellID].split();
+					break;
+				case 'cell merge next':
+					this.gs.cells[inputs[i].cellID].mergeNext = true;
 					break;
 				case 'cell add temp':
 					this.gs.cells[inputs[i].cellID].matter.temperature += inputs[i].temp;
@@ -954,7 +990,7 @@ game_core.prototype.client_debug_togglePause = function(){
 
 game_core.prototype.client_debug_split_cell = function(cellID){
 	this.me.inputs.push({
-        action:'split cell',
+        action:'cell split',
         cellID:cellID
     });
 }
@@ -971,7 +1007,7 @@ game_core.prototype.client_update = function() {
     
     this.camera.begin();
     
-    for (var i = 0; i<this.gs.cells.length; i++){
+	for (var i = 0; i<this.gs.cells.length; i++){
 		this.gs.cells[i].draw();
 	}
 	
@@ -979,6 +1015,17 @@ game_core.prototype.client_update = function() {
 		this.gs.cells[this.selectedCell].drawMarked();
 	}
 	
+	if (debugging){
+		for (var i = 0; i<this.physics.bodies.length; i++){
+			var body = this.physics.bodies[i];
+			
+			game.ctx.strokeStyle = '#A06060';
+			game.ctx.lineWidth = 1;
+			game.ctx.beginPath();
+			game.ctx.arc( body.position[0], body.position[1], body.shapes[0].radius, 0, Math.PI*2 );
+			game.ctx.stroke();
+		}
+	}
     
     this.camera.end();
 
@@ -1006,6 +1053,19 @@ game_core.prototype.create_physics_simulation = function() {
     this.physics.defaultContactMaterial.friction = 0.5;
     this.physics.defaultContactMaterial.stiffness = 800;
     this.physics.defaultContactMaterial.restitution = 1;
+	
+	// This will be reference to main object if it is a cell
+	p2.Body.prototype.cell = 0; 
+    
+	// Collision response
+	this.physics.on("beginContact",function(event){
+	  //console.log(event.bodyA.cell);
+	  // Check if both are cells
+	  if (event.bodyA.cell != 0 && event.bodyB.cell != 0){
+		if (event.bodyA.cell.mergeNext)		 event.bodyA.cell.merge(event.bodyB.cell);
+		else if (event.bodyB.cell.mergeNext) event.bodyB.cell.merge(event.bodyA.cell);
+	  }
+	});
     
     // World boundaries
     this.physics.boundaries = new p2.Body({position:[this.world.width/2,this.world.height]});
