@@ -344,8 +344,6 @@ Matter.prototype.add = function(newCompound){
             });
         });
 
-        if (compound) console.log("found: "+newCompound.count+'+'+compound.count);
-
         if (compound)
             compound.count += newCompound.count;
         else 
@@ -643,12 +641,17 @@ var Cell = function(gamecore, options){
     gamecore.physics.addBody(this.body);
 }
 
+var globalTemp = 3;
 Cell.prototype.updt = function(isServer){
     if (isServer && Math.random() < 0.05*Math.sqrt(this.matter.temperature)){
         this.matter.random_reaction();
         this.updatePhysicalProperties();
+
+        if (Math.pow(this.matter.averageFreeBonds*this.matter.mass/15000.0, 2) > 1.0) this.split();
     }
-    this.matter.temperature *= 0.9995;
+
+
+    this.matter.temperature = (this.matter.temperature - globalTemp)*0.9995 + globalTemp;
 }
 
 Cell.prototype.updatePhysicalProperties = function(){
@@ -685,7 +688,14 @@ Cell.prototype.split = function(parts){
 			}
 		}
 	}
-	
+
+    partCompounds = partCompounds.filter(function(e){return e.length != 0})
+    parts = partCompounds.length;
+
+    // Don't do anything if it results in this cell getting nada
+    if (parts == 1)
+	    return;
+
 	// Create new child cells
 	for (var i = 1; i<parts; i++){
 		if (partCompounds[i].length != 0){
@@ -702,11 +712,8 @@ Cell.prototype.split = function(parts){
 		}
 	}
 	
-	// Update parent cell matter, and delete it if empty
-	if (partCompounds[0].length == 0){
-		this.gs.erase(this);
-	}
-	else {
+
+	{
 		// Update old cell
 		this.matter = new Matter(partCompounds[0], this.matter.temperature);
 		var pos = [Math.cos(velocityAngle)*radius+center[0], Math.sin(velocityAngle)*radius+center[1]];
@@ -737,7 +744,7 @@ Cell.prototype.merge = function(otherCell){
 	this.updatePhysicalProperties();
 	
 	for (var i = 0; i<otherCell.matter.matter.length; i++){
-		this.matter.add(Matter.create(otherCell.matter.matter[i].iform, otherCell.matter.matter[i].count));
+		this.matter.add(Matter.create(otherCell.matter.matter[i].iform, otherCell.matter.matter[i].length));
 	}
 	
 	// Delete other cell
@@ -1059,13 +1066,14 @@ game_core.prototype.create_physics_simulation = function() {
     
 	// Collision response
 	this.physics.on("beginContact",function(event){
-	  //console.log(event.bodyA.cell);
-	  // Check if both are cells
-	  if (event.bodyA.cell != 0 && event.bodyB.cell != 0){
-		if (event.bodyA.cell.mergeNext)		 event.bodyA.cell.merge(event.bodyB.cell);
-		else if (event.bodyB.cell.mergeNext) event.bodyB.cell.merge(event.bodyA.cell);
-	  }
-	});
+        // Check if both are cells
+        if (event.bodyA.cell != 0 && event.bodyB.cell != 0){
+            var shouldMerge = Math.pow( (event.bodyA.cell.matter.averageFreeBonds + event.bodyB.cell.matter.averageFreeBonds)
+                * (event.bodyA.cell.matter.mass+event.bodyB.cell.matter.mass) /  30000.0, 2) < 0.5;
+            if (event.bodyA.cell.mergeNext || shouldMerge) event.bodyA.cell.merge(event.bodyB.cell);
+            else if (event.bodyB.cell.mergeNext)           event.bodyB.cell.merge(event.bodyA.cell);
+        }
+    });
     
     // World boundaries
     this.physics.boundaries = new p2.Body({position:[this.world.width/2,this.world.height]});
